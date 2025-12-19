@@ -5,13 +5,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useApp } from '../../contexts/AppContext';
 import { DocumentPanel } from '../../components/DocumentPanel';
-import { RM, RMItem, RMStatus, RMItemStatus, Material, User, AuditLog } from '../../types';
+import { RM, RMItem, RMStatus, RMItemStatus, Material, User, AuditLog, Scope } from '../../types';
 import { STATUS_COLORS } from '../../constants';
 
 export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: string) => void }> = ({ id, onBack, onEdit }) => {
   const { user, hasPermission } = useAuth();
   const { notify } = useNotification();
-  const { works, currentScope } = useApp();
+  const { works } = useApp();
   const [data, setData] = useState<{ rm: RM; items: RMItem[] } | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [requester, setRequester] = useState<User | null>(null);
@@ -34,7 +34,6 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
       setRequester(req || null);
       setLogs(l);
 
-      // Iniciar mapa de triagem
       const initialMap: Record<string, { attended: number; purchase: number }> = {};
       res.items.forEach(i => {
         initialMap[i.id] = { 
@@ -56,18 +55,6 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
     loadData();
   };
 
-  const handleConfirmItemTriage = (itemId: string) => {
-    const t = triageMap[itemId];
-    const item = data?.items.find(i => i.id === itemId);
-    if (!t || !item) return;
-
-    if (t.attended + t.purchase !== item.quantityRequested) {
-      return notify(`A soma deve ser igual ao solicitado (${item.quantityRequested}).`, 'warning');
-    }
-
-    notify('Item marcado para processamento.', 'info');
-  };
-
   const handleFinalizeTriage = async () => {
     if (!data || !user) return;
     try {
@@ -87,19 +74,27 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
   if (!data) return <div className="p-20 text-center">RM não encontrada</div>;
 
   const { rm, items } = data;
-  const currentWork = works.find(w => w.id === rm.workId);
+  const currentWork = works.find(w => w.id === rm.workId || w.id === rm.unitId);
 
-  const canApproveL1 = hasPermission('RM_APPROVE_L1', currentScope || undefined) && rm.status === RMStatus.WAITING_L1;
-  const canApproveL2 = hasPermission('RM_APPROVE_L2', currentScope || undefined) && rm.status === RMStatus.WAITING_L2;
-  const canTriage = hasPermission('RM_FULFILL_FROM_STOCK', currentScope || undefined) && rm.status === RMStatus.APPROVED;
-  const canCancel = hasPermission('RM_CANCEL', currentScope || undefined) && ['WAITING_L1', 'WAITING_L2', 'APPROVED'].includes(rm.status);
-  const canEdit = (rm.requesterId === user?.id || hasPermission('RM_CREATE')) && rm.status === RMStatus.WAITING_L1;
+  // Escopo específico desta RM para validação de permissões correta
+  const rmScope: Scope = {
+    tenantId: rm.tenantId,
+    unitId: rm.unitId || rm.workId,
+    workId: rm.workId || rm.unitId,
+    warehouseId: rm.warehouseId
+  };
+
+  const canApproveL1 = hasPermission('RM_APPROVE_L1', rmScope) && rm.status === RMStatus.WAITING_L1;
+  const canApproveL2 = hasPermission('RM_APPROVE_L2', rmScope) && rm.status === RMStatus.WAITING_L2;
+  const canTriage = hasPermission('RM_FULFILL_FROM_STOCK', rmScope) && rm.status === RMStatus.APPROVED;
+  const canCancel = hasPermission('RM_CANCEL', rmScope) && ['WAITING_L1', 'WAITING_L2', 'APPROVED'].includes(rm.status);
+  const canEdit = (rm.requesterId === user?.id || hasPermission('RM_CREATE', rmScope)) && rm.status === RMStatus.WAITING_L1;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20 animate-in slide-in-from-bottom-4 duration-500">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="w-10 h-10 flex items-center justify-center bg-slate-50 border rounded-xl text-slate-400 hover:text-blue-600 transition-all">
+          <button onClick={onBack} className="w-10 h-10 flex items-center justify-center bg-slate-50 border rounded-xl text-slate-400 hover:text-blue-600 transition-all shadow-sm">
             <i className="fas fa-arrow-left"></i>
           </button>
           <div>
@@ -124,7 +119,7 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
         <div className="lg:col-span-2 space-y-6">
            <div className="bg-white p-8 rounded-2xl border border-slate-100 grid grid-cols-2 gap-8 shadow-sm">
               <div>
-                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Canteiro de Obra / Destino</p>
+                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Destino</p>
                  <p className="font-bold text-slate-800 flex items-center gap-2">
                     <i className="fas fa-hard-hat text-orange-500"></i>
                     {currentWork?.name || rm.workId}
@@ -174,10 +169,10 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
                           {canTriage ? (
                             <>
                               <td className="px-6 py-5">
-                                <input type="number" className="w-20 p-2 border rounded-lg text-center text-xs font-black bg-emerald-50" value={tri.attended} onChange={e => setTriageMap({...triageMap, [item.id]: { ...tri, attended: Number(e.target.value), purchase: item.quantityRequested - Number(e.target.value) }})} />
+                                <input type="number" className="w-20 p-2 border rounded-lg text-center text-xs font-black bg-emerald-50 outline-none focus:ring-2 focus:ring-emerald-500" value={tri.attended} onChange={e => setTriageMap({...triageMap, [item.id]: { ...tri, attended: Number(e.target.value), purchase: item.quantityRequested - Number(e.target.value) }})} />
                               </td>
                               <td className="px-6 py-5">
-                                <input type="number" className="w-20 p-2 border rounded-lg text-center text-xs font-black bg-blue-50" value={tri.purchase} onChange={e => setTriageMap({...triageMap, [item.id]: { ...tri, purchase: Number(e.target.value), attended: item.quantityRequested - Number(e.target.value) }})} />
+                                <input type="number" className="w-20 p-2 border rounded-lg text-center text-xs font-black bg-blue-50 outline-none focus:ring-2 focus:ring-blue-500" value={tri.purchase} onChange={e => setTriageMap({...triageMap, [item.id]: { ...tri, purchase: Number(e.target.value), attended: item.quantityRequested - Number(e.target.value) }})} />
                               </td>
                             </>
                           ) : (

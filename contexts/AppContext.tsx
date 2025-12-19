@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo } from '
 import { Tenant, Unit, Sector, Warehouse, Scope, RoleAssignment, OperationType, Role } from '../types';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
+import { normalizeScope, getScopeUnitId } from '../utils/scope';
 
 interface AppContextType {
   tenants: Tenant[];
@@ -36,7 +37,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [tenants, currentScope]);
 
   const activeUnit = useMemo(() => {
-    const uid = currentScope?.unitId || currentScope?.workId;
+    const uid = getScopeUnitId(currentScope);
     return units.find(u => u.id === uid) || null;
   }, [units, currentScope]);
 
@@ -51,29 +52,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const refreshMetadata = async () => {
+    if (!currentScope?.tenantId) return;
+
     const t = await api.getTenants();
     setTenants(t);
     
-    const tid = currentScope?.tenantId;
-    if (tid) {
-      const u = await api.getWorks(tid);
-      setUnits([...u]);
+    const freshTenant = t.find(x => x.id === currentScope.tenantId);
+    const tid = currentScope.tenantId;
+    
+    const u = await api.getWorks(tid);
+    setUnits([...u]);
+    
+    const unitId = getScopeUnitId(currentScope);
+    if (unitId) {
+      const wh = await api.getWarehouses(unitId);
+      setWarehouses([...wh]);
       
-      const uid = currentScope.unitId || currentScope.workId;
-      if (uid) {
-        const wh = await api.getWarehouses(uid);
-        setWarehouses([...wh]);
-        
-        // Auto-selecionar almoxarifado se houver apenas um ou se nenhum estiver selecionado
-        if (wh.length > 0 && !currentScope.warehouseId) {
-          setCurrentScope(prev => prev ? { ...prev, warehouseId: wh[0].id } : null);
-        }
-
-        if (activeTenant?.operationType === OperationType.FACTORY) {
-           setSectors([{ id: 'sec1', unitId: uid, name: 'Produção A', active: true }]);
-        } else {
-           setSectors([]);
-        }
+      // Carregamento real de setores se for Fábrica
+      if (freshTenant?.operationType === OperationType.FACTORY) {
+         const s = await api.getSectors(unitId);
+         setSectors(s);
+      } else {
+         setSectors([]);
       }
     }
   };
@@ -82,10 +82,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (user) {
       const saved = localStorage.getItem(`SCOPE_${user.id}`);
       if (saved) {
-        setCurrentScope(JSON.parse(saved));
+        try {
+          const parsed = JSON.parse(saved);
+          setCurrentScope(normalizeScope(parsed));
+        } catch (e) {
+          const initial = user.roleAssignments[0]?.scope;
+          if (initial) setCurrentScope(normalizeScope(initial));
+        }
       } else {
         const initial = user.roleAssignments[0]?.scope;
-        if (initial) setCurrentScope(initial);
+        if (initial) setCurrentScope(normalizeScope(initial));
       }
     }
   }, [user]);
@@ -95,15 +101,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(`SCOPE_${user?.id}`, JSON.stringify(currentScope));
       refreshMetadata();
     }
-  }, [currentScope?.tenantId, currentScope?.unitId, currentScope?.workId]);
+  }, [currentScope?.tenantId, currentScope?.unitId, currentScope?.workId, currentScope?.warehouseId, currentScope?.sectorId]);
 
   const activeRole = useMemo(() => {
     if (!user || !currentScope) return 'VIEWER';
     const match = user.roleAssignments.find(ra => {
       if (ra.scope.tenantId !== currentScope.tenantId) return false;
       if (ra.scope.warehouseId && ra.scope.warehouseId !== currentScope.warehouseId) return false;
-      const uid = currentScope.unitId || currentScope.workId;
-      const ruid = ra.scope.unitId || ra.scope.workId;
+      const uid = getScopeUnitId(currentScope);
+      const ruid = getScopeUnitId(ra.scope);
       if (ruid && ruid !== uid) return false;
       return true;
     });
@@ -114,7 +120,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) return false;
     if (user.roleAssignments.some(ra => ra.role === Role.OWNER)) return true;
     return user.roleAssignments.some(ra => {
-       const ruid = ra.scope.unitId || ra.scope.workId;
+       const ruid = getScopeUnitId(ra.scope);
        return !ruid || ruid === unitId;
     });
   };
@@ -125,10 +131,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return user.roleAssignments.some(ra => !ra.scope.warehouseId || ra.scope.warehouseId === whId);
   };
 
+  const setScopeNormalized = (newScope: Scope) => {
+    setCurrentScope(normalizeScope(newScope));
+  };
+
   return (
     <AppContext.Provider value={{ 
       tenants, units, works: units, sectors, warehouses, currentScope, activeRole, activeTenant, activeUnit,
-      setScope: setCurrentScope, refreshMetadata, isPermittedUnit, isPermittedWh, getLabel 
+      setScope: setScopeNormalized, refreshMetadata, isPermittedUnit, isPermittedWh, getLabel 
     }}>
       {children}
     </AppContext.Provider>

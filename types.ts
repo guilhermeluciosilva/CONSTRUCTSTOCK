@@ -56,6 +56,8 @@ export interface User {
   name: string;
   email: string;
   password?: string;
+  phone?: string;
+  personalDocument?: string;
   roleAssignments: RoleAssignment[];
 }
 

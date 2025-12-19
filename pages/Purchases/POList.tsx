@@ -13,7 +13,8 @@ export const POList: React.FC<{ onNew: () => void, onDetail: (id: string) => voi
 
   useEffect(() => {
     if (currentScope) {
-      api.getPOs(currentScope.tenantId).then(setPos);
+      // Fix: Pass full currentScope object instead of just tenantId string
+      api.getPOs(currentScope).then(setPos);
       api.getSuppliers(currentScope.tenantId).then(setSuppliers);
     }
   }, [currentScope]);

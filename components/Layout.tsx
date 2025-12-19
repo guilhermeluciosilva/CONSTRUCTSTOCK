@@ -90,51 +90,84 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
               <i className="fas fa-bars text-xl"></i>
             </button>
             
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-4 text-sm">
               <div className="hidden sm:flex items-center gap-2 group">
                 <i className="fas fa-building text-blue-500 transition-colors"></i>
                 <span className="font-black text-slate-700">{activeTenant?.name || 'Empresa'}</span>
               </div>
 
-              <div className="flex items-center gap-2 border-l border-slate-100 pl-6 group">
-                <i className={`fas ${isStore ? 'fa-store' : isFactory ? 'fa-industry' : 'fa-hard-hat'} text-slate-300 group-hover:text-orange-500 transition-colors`}></i>
-                <select 
-                  className="bg-transparent border-none p-0 font-black text-slate-700 focus:ring-0 cursor-pointer appearance-none pr-4"
-                  value={currentScope?.unitId || currentScope?.workId || ''}
-                  onChange={(e) => setScope({ ...currentScope!, unitId: e.target.value, workId: e.target.value, sectorId: undefined, warehouseId: undefined })}
-                >
-                  <option value="">Todas as {getLabel('UNIT')}s</option>
-                  {filteredUnits.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
+              {/* Seletor de Unidade Estilizado como Botão */}
+              <div className="flex items-center border-l border-slate-100 pl-4">
+                <div className="relative group">
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer shadow-sm active:scale-95">
+                    <i className={`fas ${isStore ? 'fa-store' : isFactory ? 'fa-industry' : 'fa-hard-hat'} ${currentScope?.unitId ? 'text-blue-600' : 'text-slate-400'}`}></i>
+                    <div className="flex flex-col min-w-[140px]">
+                      <span className="text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
+                        {getLabel('UNIT')} Selecionada
+                      </span>
+                      <div className="relative flex items-center">
+                        <select 
+                          className="bg-transparent border-none p-0 font-black text-slate-800 focus:ring-0 cursor-pointer appearance-none pr-6 text-xs w-full"
+                          value={currentScope?.unitId || currentScope?.workId || ''}
+                          onChange={(e) => setScope({ ...currentScope!, unitId: e.target.value, workId: e.target.value, sectorId: undefined, warehouseId: undefined })}
+                        >
+                          <option value="">Todas as {getLabel('UNIT')}s</option>
+                          {filteredUnits.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                        </select>
+                        <i className="fas fa-chevron-down absolute right-0 text-[10px] text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {isFactory && currentScope?.unitId && (
-                <div className="flex items-center gap-2 border-l border-slate-100 pl-6 group">
-                  <i className="fas fa-layer-group text-slate-300 group-hover:text-purple-500 transition-colors"></i>
-                  <select 
-                    className="bg-transparent border-none p-0 font-black text-slate-700 focus:ring-0 cursor-pointer appearance-none pr-4"
-                    value={currentScope?.sectorId || ''}
-                    onChange={(e) => setScope({ ...currentScope!, sectorId: e.target.value, warehouseId: undefined })}
-                  >
-                    <option value="">Todos os {getLabel('SECTOR')}s</option>
-                    {sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                <div className="flex items-center border-l border-slate-100 pl-4">
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer shadow-sm active:scale-95">
+                    <i className="fas fa-layer-group text-slate-400 group-hover:text-purple-500 transition-colors"></i>
+                    <div className="flex flex-col min-w-[120px]">
+                      <span className="text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
+                        {getLabel('SECTOR')}
+                      </span>
+                      <div className="relative flex items-center">
+                        <select 
+                          className="bg-transparent border-none p-0 font-black text-slate-700 focus:ring-0 cursor-pointer appearance-none pr-6 text-xs w-full"
+                          value={currentScope?.sectorId || ''}
+                          onChange={(e) => setScope({ ...currentScope!, sectorId: e.target.value, warehouseId: undefined })}
+                        >
+                          <option value="">Todos os {getLabel('SECTOR')}s</option>
+                          {sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                        <i className="fas fa-chevron-down absolute right-0 text-[10px] text-slate-400 pointer-events-none"></i>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {(currentScope?.unitId || currentScope?.workId) && (
-                <div className="flex items-center gap-2 border-l border-slate-100 pl-6 group">
-                  <i className="fas fa-warehouse text-slate-300 group-hover:text-emerald-500 transition-colors"></i>
-                  <select 
-                    className="bg-transparent border-none p-0 font-black text-slate-700 focus:ring-0 cursor-pointer appearance-none pr-4"
-                    value={currentScope?.warehouseId || ''}
-                    onChange={(e) => setScope({ ...currentScope!, warehouseId: e.target.value })}
-                  >
-                    <option value="">Estoque Geral</option>
-                    {filteredWhs.filter(wh => !currentScope.sectorId || wh.sectorId === currentScope.sectorId).map(wh => (
-                      <option key={wh.id} value={wh.id}>{wh.name}</option>
-                    ))}
-                  </select>
+                <div className="flex items-center border-l border-slate-100 pl-4">
+                  <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all cursor-pointer shadow-sm active:scale-95">
+                    <i className="fas fa-warehouse text-slate-400 group-hover:text-emerald-500 transition-colors"></i>
+                    <div className="flex flex-col min-w-[120px]">
+                      <span className="text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
+                        Almoxarifado
+                      </span>
+                      <div className="relative flex items-center">
+                        <select 
+                          className="bg-transparent border-none p-0 font-black text-slate-700 focus:ring-0 cursor-pointer appearance-none pr-6 text-xs w-full"
+                          value={currentScope?.warehouseId || ''}
+                          onChange={(e) => setScope({ ...currentScope!, warehouseId: e.target.value })}
+                        >
+                          <option value="">Estoque Geral</option>
+                          {filteredWhs.filter(wh => !currentScope.sectorId || wh.sectorId === currentScope.sectorId).map(wh => (
+                            <option key={wh.id} value={wh.id}>{wh.name}</option>
+                          ))}
+                        </select>
+                        <i className="fas fa-chevron-down absolute right-0 text-[10px] text-slate-400 pointer-events-none"></i>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

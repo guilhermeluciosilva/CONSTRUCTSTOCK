@@ -11,8 +11,9 @@ export const SalesList: React.FC<{ onNew: () => void }> = ({ onNew }) => {
   const [sales, setSales] = useState<Sale[]>([]);
 
   useEffect(() => {
-    if (currentScope?.tenantId) {
-      api.getSales(currentScope.tenantId).then(setSales);
+    // Fix: Ensure currentScope is defined and pass it to getSales instead of just tenantId string
+    if (currentScope) {
+      api.getSales(currentScope).then(setSales);
     }
   }, [currentScope]);
 

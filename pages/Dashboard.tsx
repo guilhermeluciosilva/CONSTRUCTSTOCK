@@ -46,7 +46,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectRM, onNavigate }) 
 
         // Valor de vendas do dia (específico para LOJA)
         if (activeTenant?.operationType === OperationType.STORE) {
-          const allSales = await api.getSales(currentScope.tenantId);
+          // Fix: Pass full currentScope object instead of just tenantId string
+          const allSales = await api.getSales(currentScope);
           const todayStr = new Date().toLocaleDateString();
           const totalToday = allSales
             .filter(s => new Date(s.createdAt).toLocaleDateString() === todayStr && s.status === 'COMPLETED')

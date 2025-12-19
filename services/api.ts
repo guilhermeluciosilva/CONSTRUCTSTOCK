@@ -36,7 +36,7 @@ const INITIAL_DB: DB = {
     { id: 't1', name: 'Construtora Master', active: true, operationType: OperationType.CONSTRUCTION },
   ],
   works: [
-    { id: 'w1', tenantId: 't1', name: 'Edifício Horizonte', active: true, enabledModuleIds: ['rm', 'stock', 'movements', 'transfers', 'purchases', 'documents', 'reports'] },
+    { id: 'w1', tenantId: 't1', name: 'Edifício Horizonte', active: true, enabledModuleIds: ['rm', 'stock', 'movements', 'transfers', 'purchases', 'documents', 'reports', 'admin_import'] },
   ],
   sectors: [],
   warehouses: [
@@ -85,7 +85,7 @@ class ApiService {
       tenantId: tenantId,
       name: companyData.unitName,
       active: true,
-      enabledModuleIds: []
+      enabledModuleIds: ['rm', 'stock', 'movements', 'transfers', 'purchases', 'documents', 'reports', 'admin_import']
     };
 
     const newUser: User = {
@@ -122,6 +122,41 @@ class ApiService {
     const user = this.db.users.find(u => u.email === email && (!password || u.password === password));
     if (!user) throw new Error('Email ou senha inválidos');
     return user;
+  }
+
+  async updateUser(userId: string, data: Partial<User>): Promise<User> {
+    const idx = this.db.users.findIndex(u => u.id === userId);
+    if (idx === -1) throw new Error('Usuário não encontrado');
+    
+    // Protege campos sensíveis via update comum
+    const { password, roleAssignments, ...updatable } = data;
+    this.db.users[idx] = { ...this.db.users[idx], ...updatable };
+    this.save();
+    return this.db.users[idx];
+  }
+
+  async changePassword(userId: string, oldPass: string, newPass: string): Promise<void> {
+    const user = this.db.users.find(u => u.id === userId);
+    if (!user) throw new Error('Usuário não encontrado');
+    if (user.password !== oldPass) throw new Error('Senha atual incorreta');
+    
+    user.password = newPass;
+    this.save();
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    this.db.users = this.db.users.filter(u => u.id !== userId);
+    this.save();
+  }
+
+  async deleteTenant(tenantId: string): Promise<void> {
+    // Exclusão completa (Soft delete no tenant e limpeza de relação)
+    const tenant = this.db.tenants.find(t => t.id === tenantId);
+    if (tenant) tenant.active = false;
+    
+    this.db.users = this.db.users.filter(u => !u.roleAssignments.some(ra => ra.scope.tenantId === tenantId));
+    this.db.works = this.db.works.filter(w => w.tenantId !== tenantId);
+    this.save();
   }
 
   async createSector(unitId: string, name: string): Promise<Sector> {
@@ -169,7 +204,13 @@ class ApiService {
     if (unit) { unit.enabledModuleIds = enabledModuleIds; this.save(); }
   }
 
-  async getRMs(scope: Scope) { return this.db.rms.filter(r => r.tenantId === scope.tenantId); }
+  async getRMs(scope: Scope) { 
+    const unitId = scope.unitId || scope.workId;
+    return this.db.rms.filter(r => 
+      r.tenantId === scope.tenantId && 
+      (!unitId || r.unitId === unitId || r.workId === unitId)
+    ); 
+  }
 
   async getRMById(id: string) {
     const rm = this.db.rms.find(r => r.id === id);
@@ -206,12 +247,10 @@ class ApiService {
     return newRM;
   }
 
-  // Novo método para atualizar RM
   async updateRM(id: string, data: any, items: any[]) {
     const idx = this.db.rms.findIndex(r => r.id === id);
     if (idx !== -1) {
       this.db.rms[idx] = { ...this.db.rms[idx], ...data };
-      // Remove old items and add new ones
       this.db.rmItems = this.db.rmItems.filter(i => i.rmId !== id);
       items.forEach(i => {
         this.db.rmItems.push({
@@ -224,10 +263,6 @@ class ApiService {
         });
       });
       this.save();
-      this.logAudit({ 
-        tenantId: data.tenantId, entityId: id, entityType: 'RM', action: 'UPDATE', 
-        userId: data.requesterId || 'u1', userName: 'Usuário', details: 'Requisição de material atualizada' 
-      });
     }
   }
 
@@ -255,13 +290,10 @@ class ApiService {
 
   async processRMFulfillment(rmId: string, itemsTriage: any[], userId: string) {
     const { rm, items } = await this.getRMById(rmId);
-    
-    // 1. Filtrar itens que serão atendidos do estoque central
     const itemsToTransfer = itemsTriage.filter(i => i.attended > 0);
     
     if (itemsToTransfer.length > 0) {
-      // Criar Transferência Automática
-      const centralWh = this.db.warehouses.find(w => w.unitId === rm.unitId && w.isCentral) || this.db.warehouses[0];
+      const centralWh = this.db.warehouses.find(w => (w.unitId === rm.unitId || w.workId === rm.workId) && w.isCentral) || this.db.warehouses[0];
       const transferId = await this.createTransfer({
         tenantId: rm.tenantId,
         originWarehouseId: centralWh.id,
@@ -279,12 +311,10 @@ class ApiService {
       });
     }
 
-    // 2. Atualizar status dos itens na RM
     itemsTriage.forEach(async (t) => {
       await this.triageRMItem(t.id, t.attended, t.purchase);
     });
 
-    // 3. Atualizar status da RM
     await this.updateRMStatus(rmId, RMStatus.IN_FULFILLMENT, userId);
   }
 
@@ -313,15 +343,26 @@ class ApiService {
   }
 
   async getMovements(scope: Scope) { 
-    return this.db.movements.filter(m => 
-      (!scope.warehouseId || m.warehouseId === scope.warehouseId)
-    ); 
+    const unitId = scope.unitId || scope.workId;
+    const whsOfUnit = unitId ? this.db.warehouses.filter(w => w.unitId === unitId || w.workId === unitId).map(w => w.id) : [];
+
+    return this.db.movements.filter(m => {
+       const matchTenant = this.db.warehouses.find(w => w.id === m.warehouseId)?.unitId; // Simplified check
+       if (scope.warehouseId) return m.warehouseId === scope.warehouseId;
+       if (unitId) return whsOfUnit.includes(m.warehouseId);
+       return true;
+    }); 
   }
 
   async getStock(scope: Scope) { 
-    return this.db.stocks.filter(s => 
-      (!scope.warehouseId || s.warehouseId === scope.warehouseId)
-    ); 
+    const unitId = scope.unitId || scope.workId;
+    const whsOfUnit = unitId ? this.db.warehouses.filter(w => w.unitId === unitId || w.workId === unitId).map(w => w.id) : [];
+
+    return this.db.stocks.filter(s => {
+       if (scope.warehouseId) return s.warehouseId === scope.warehouseId;
+       if (unitId) return whsOfUnit.includes(s.warehouseId);
+       return true;
+    }); 
   }
 
   async getPurchaseBacklog(tenantId: string) {
@@ -374,11 +415,24 @@ class ApiService {
     }
   }
 
-  async getPOs(tenantId: string) { return this.db.pos.filter(p => p.tenantId === tenantId); }
+  async getPOs(scope: Scope) { 
+    const unitId = scope.unitId || scope.workId;
+    return this.db.pos.filter(p => 
+      p.tenantId === scope.tenantId &&
+      (!unitId || p.unitId === unitId || p.workId === unitId)
+    ); 
+  }
   async getSuppliers(tenantId: string) { return this.db.suppliers.filter(s => s.tenantId === tenantId); }
 
   async getTransfers(scope: Scope) {
-    return this.db.transfers.filter(t => t.tenantId === scope.tenantId);
+    const unitId = scope.unitId || scope.workId;
+    return this.db.transfers.filter(t => {
+       const isOriginMatch = this.db.warehouses.find(w => w.id === t.originWarehouseId)?.unitId === unitId;
+       const isDestMatch = this.db.warehouses.find(w => w.id === t.destinationWarehouseId)?.unitId === unitId;
+       if (scope.warehouseId) return t.originWarehouseId === scope.warehouseId || t.destinationWarehouseId === scope.warehouseId;
+       if (unitId) return isOriginMatch || isDestMatch;
+       return t.tenantId === scope.tenantId;
+    });
   }
 
   async getTransferById(id: string) {
@@ -393,8 +447,6 @@ class ApiService {
     if (t) {
       t.status = 'IN_TRANSIT';
       t.dispatchedAt = new Date().toISOString();
-      
-      // Movimentar estoque na origem
       const items = this.db.transferItems.filter(i => i.transferId === id);
       items.forEach(item => {
         this.addMovement({
@@ -405,7 +457,6 @@ class ApiService {
           description: `Despacho Guia ${id}`
         });
       });
-      
       this.save();
     }
   }
@@ -419,8 +470,6 @@ class ApiService {
       items.forEach(item => {
         const received = receivedQtys[item.id] || 0;
         item.quantityReceived = received;
-        
-        // Movimentar estoque no destino
         this.addMovement({
           warehouseId: t.destinationWarehouseId,
           materialId: item.materialId,
@@ -460,6 +509,16 @@ class ApiService {
     this.db.materials.push(newM);
     this.save();
     return newM;
+  }
+
+  async updateMaterial(id: string, data: Partial<Material>) {
+    const idx = this.db.materials.findIndex(m => m.id === id);
+    if (idx !== -1) {
+      this.db.materials[idx] = { ...this.db.materials[idx], ...data };
+      this.save();
+      return this.db.materials[idx];
+    }
+    throw new Error('Material não encontrado');
   }
 
   async createWork(data: any) {
@@ -532,13 +591,18 @@ class ApiService {
     return newSale;
   }
 
-  async getSales(tenantId: string) { return this.db.sales.filter(s => s.tenantId === tenantId); }
+  async getSales(scope: Scope) { 
+    const unitId = scope.unitId || scope.workId;
+    return this.db.sales.filter(s => 
+      s.tenantId === scope.tenantId &&
+      (!unitId || s.unitId === unitId)
+    ); 
+  }
 
   async importCSVBatch(lines: any[], config: any) {
     const results = { success: 0, errors: 0 };
-    // Simulação de processamento de lote
     lines.forEach(line => {
-       if (line.status === 'OK') results.success++;
+       if (line.status === 'OK' || line.status === 'AVISO') results.success++;
        else results.errors++;
     });
     return results;

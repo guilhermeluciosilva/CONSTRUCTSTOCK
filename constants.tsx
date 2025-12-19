@@ -135,7 +135,9 @@ export const MENU_ITEMS = [
   { id: 'admin_org', label: 'Organização', icon: 'fa-sitemap', path: '/admin/org', minPermission: 'ORG_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
   { id: 'admin_materials', label: 'Materiais', icon: 'fa-tag', path: '/admin/materials', minPermission: 'MATERIAL_CATALOG_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
   { id: 'admin_suppliers', label: 'Fornecedores', icon: 'fa-handshake', path: '/admin/suppliers', minPermission: 'SUPPLIER_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'settings', label: 'Configurações', icon: 'fa-sliders-h', path: '/admin/settings', minPermission: 'SETTINGS_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
+  { id: 'admin_import', label: 'Importação CSV', icon: 'fa-file-csv', path: '/admin/import', minPermission: 'IMPORT_CSV', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
+  // Configurações acessíveis a todos os usuários para autogestão (Perfil/Senha)
+  { id: 'settings', label: 'Configurações', icon: 'fa-sliders-h', path: '/admin/settings', minPermission: 'RM_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
 ];
 
 export const STATUS_COLORS: Record<string, string> = {

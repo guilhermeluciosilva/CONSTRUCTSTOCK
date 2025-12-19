@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider, useApp } from './contexts/AppContext';
-import { NotificationProvider } from './notification-provider'; // Assume fixing path
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
 import { Onboarding } from './pages/Admin/Onboarding';
@@ -28,7 +27,7 @@ import { SalesList } from './pages/Sales/SalesList';
 import { SalesEntry } from './pages/Sales/SalesEntry';
 import { OperationSettings } from './pages/Admin/OperationSettings';
 import { CSVImport } from './pages/Admin/CSVImport';
-import { NotificationProvider as InternalNotificationProvider } from './contexts/NotificationContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { MENU_ITEMS } from './constants';
 import { Permission } from './types';
 
@@ -66,7 +65,7 @@ const AppContent: React.FC = () => {
 
   const renderPage = () => {
     switch (currentPath) {
-      case '/dashboard': return <Dashboard onNavigate={handleNavigate} />;
+      case '/dashboard': return <Dashboard onNavigate={handleNavigate} onSelectRM={(id) => { setSelectedRMId(id); setCurrentPath('/rm/detail'); }} />;
       case '/sales': return <SalesList onNew={() => setCurrentPath('/sales/new')} />;
       case '/sales/new': return <SalesEntry onFinished={() => setCurrentPath('/sales')} />;
       case '/rm': return <RMList onDetail={(id) => { setSelectedRMId(id); setCurrentPath('/rm/detail'); }} onNew={() => setCurrentPath('/rm/new')} />;
@@ -97,9 +96,9 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => (
   <AuthProvider>
-    <InternalNotificationProvider>
+    <NotificationProvider>
       <AppProvider><AppContent /></AppProvider>
-    </InternalNotificationProvider>
+    </NotificationProvider>
   </AuthProvider>
 );
 
