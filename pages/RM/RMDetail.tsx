@@ -37,7 +37,10 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
       // Iniciar mapa de triagem
       const initialMap: Record<string, { attended: number; purchase: number }> = {};
       res.items.forEach(i => {
-        initialMap[i.id] = { attended: i.quantityFulfilled || 0, purchase: (i.status === 'FOR_PURCHASE') ? i.quantityRequested - i.quantityFulfilled : 0 };
+        initialMap[i.id] = { 
+          attended: i.quantityFulfilled || 0, 
+          purchase: (i.status === 'FOR_PURCHASE') ? i.quantityRequested - i.quantityFulfilled : 0 
+        };
       });
       setTriageMap(initialMap);
 
@@ -48,33 +51,36 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
   useEffect(() => { loadData(); }, [id]);
 
   const handleStatusUpdate = async (newStatus: RMStatus) => {
-    await api.updateRMStatus(id, newStatus);
+    await api.updateRMStatus(id, newStatus, user?.id);
     notify('Status atualizado com sucesso!', 'success');
     loadData();
   };
 
-  const handleConfirmItemTriage = async (itemId: string) => {
+  const handleConfirmItemTriage = (itemId: string) => {
     const t = triageMap[itemId];
     const item = data?.items.find(i => i.id === itemId);
     if (!t || !item) return;
 
     if (t.attended + t.purchase !== item.quantityRequested) {
-      return notify(`A soma das quantidades deve ser igual ao solicitado (${item.quantityRequested}).`, 'warning');
+      return notify(`A soma deve ser igual ao solicitado (${item.quantityRequested}).`, 'warning');
     }
 
-    await api.triageRMItem(itemId, t.attended, t.purchase);
-    notify('Triagem do item salva.', 'success');
-    loadData();
+    notify('Item marcado para processamento.', 'info');
   };
 
   const handleFinalizeTriage = async () => {
-    // Verificar se todos os itens foram triados (nenhum PENDING)
-    const allTriaged = data?.items.every(i => i.status !== RMItemStatus.PENDING);
-    if (!allTriaged) return notify('Todos os itens devem ser triados antes de finalizar.', 'warning');
+    if (!data || !user) return;
+    try {
+      const itemsToProcess = data.items.map(i => ({
+        ...i,
+        attended: triageMap[i.id]?.attended || 0,
+        purchase: triageMap[i.id]?.purchase || 0
+      }));
 
-    await api.updateRMStatus(id, RMStatus.IN_FULFILLMENT);
-    notify('RM entrou em atendimento!', 'success');
-    loadData();
+      await api.processRMFulfillment(id, itemsToProcess, user.id);
+      notify('Triagem finalizada! Transferências geradas.', 'success');
+      loadData();
+    } catch (err: any) { notify(err.message, 'error'); }
   };
 
   if (loading && !data) return <div className="p-20 text-center"><i className="fas fa-spinner fa-spin text-3xl text-blue-600"></i></div>;
@@ -83,12 +89,11 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
   const { rm, items } = data;
   const currentWork = works.find(w => w.id === rm.workId);
 
-  // Regras de negócio restritas conforme solicitação
   const canApproveL1 = hasPermission('RM_APPROVE_L1', currentScope || undefined) && rm.status === RMStatus.WAITING_L1;
   const canApproveL2 = hasPermission('RM_APPROVE_L2', currentScope || undefined) && rm.status === RMStatus.WAITING_L2;
   const canTriage = hasPermission('RM_FULFILL_FROM_STOCK', currentScope || undefined) && rm.status === RMStatus.APPROVED;
   const canCancel = hasPermission('RM_CANCEL', currentScope || undefined) && ['WAITING_L1', 'WAITING_L2', 'APPROVED'].includes(rm.status);
-  const canEdit = hasPermission('RM_EDIT_OWN') && rm.status === RMStatus.WAITING_L1 && rm.requesterId === user?.id;
+  const canEdit = (rm.requesterId === user?.id || hasPermission('RM_CREATE')) && rm.status === RMStatus.WAITING_L1;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-20 animate-in slide-in-from-bottom-4 duration-500">
@@ -104,20 +109,14 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
         </div>
         <div className="flex gap-2">
           {canEdit && onEdit && (
-            <button onClick={() => onEdit(rm.id)} className="bg-white text-blue-600 border border-blue-100 px-6 py-2.5 rounded-xl font-black text-xs uppercase hover:bg-blue-50 transition-all">Editar Rascunho</button>
+            <button onClick={() => onEdit(rm.id)} className="bg-white text-blue-600 border border-blue-100 px-6 py-2.5 rounded-xl font-black text-xs uppercase hover:bg-blue-50 transition-all">Editar</button>
           )}
-          {canApproveL1 && <button onClick={() => handleStatusUpdate(RMStatus.WAITING_L2)} className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg shadow-blue-200">Aprovar Técnico (L1)</button>}
-          {canApproveL2 && <button onClick={() => handleStatusUpdate(RMStatus.APPROVED)} className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg shadow-emerald-200">Aprovar Final (L2)</button>}
-          {canCancel && <button onClick={() => handleStatusUpdate(RMStatus.CANCELED)} className="bg-white text-rose-600 border border-rose-100 px-6 py-2.5 rounded-xl font-black text-xs uppercase">Cancelar</button>}
+          {canApproveL1 && <button onClick={() => handleStatusUpdate(RMStatus.WAITING_L2)} className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg shadow-blue-200">Aprovar Coordenador (L1)</button>}
+          {canApproveL2 && <button onClick={() => handleStatusUpdate(RMStatus.APPROVED)} className="bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg shadow-emerald-200">Aprovar Dono (L2)</button>}
           {canTriage && (
-             <button 
-               onClick={handleFinalizeTriage} 
-               disabled={!items.every(i => i.status !== 'PENDING')}
-               className="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg shadow-slate-200 disabled:opacity-30"
-             >
-                Finalizar Triagem
-             </button>
+             <button onClick={handleFinalizeTriage} className="bg-slate-900 text-white px-6 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg">Processar Atendimento</button>
           )}
+          {canCancel && <button onClick={() => handleStatusUpdate(RMStatus.CANCELED)} className="bg-white text-rose-600 border border-rose-100 px-6 py-2.5 rounded-xl font-black text-xs uppercase">Cancelar</button>}
         </div>
       </div>
 
@@ -125,7 +124,7 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
         <div className="lg:col-span-2 space-y-6">
            <div className="bg-white p-8 rounded-2xl border border-slate-100 grid grid-cols-2 gap-8 shadow-sm">
               <div>
-                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Canteiro de Obra</p>
+                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1">Canteiro de Obra / Destino</p>
                  <p className="font-bold text-slate-800 flex items-center gap-2">
                     <i className="fas fa-hard-hat text-orange-500"></i>
                     {currentWork?.name || rm.workId}
@@ -137,162 +136,93 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
                     {rm.status.replace('_', ' ')}
                  </span>
               </div>
-              <div className="col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-100 italic text-sm text-slate-600 font-medium">
-                 "{rm.observations || 'Sem observações adicionais.'}"
-              </div>
            </div>
 
            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              <div className="p-4 bg-slate-50 border-b flex justify-between items-center">
-                 <h3 className="text-[10px] font-black uppercase text-slate-800 tracking-widest">
-                   {canTriage ? 'Triagem do Almoxarifado Central' : 'Itens da Requisição'}
-                 </h3>
+              <div className="p-4 bg-slate-50 border-b">
+                 <h3 className="text-[10px] font-black uppercase text-slate-800 tracking-widest">Itens da Requisição</h3>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left">
-                  <thead className="text-[9px] font-black uppercase text-slate-400 border-b">
-                      <tr>
-                        <th className="px-8 py-4">Item</th>
-                        <th className="px-6 py-4 text-center">Solicitado</th>
-                        {canTriage ? (
-                          <>
-                            <th className="px-6 py-4 text-center">Atender Estoque</th>
-                            <th className="px-6 py-4 text-center">Mandar Comprar</th>
-                            <th className="px-8 py-4 text-right">Ação</th>
-                          </>
-                        ) : (
-                          <>
-                            <th className="px-6 py-4 text-center">Atendido</th>
-                            <th className="px-8 py-4 text-right">Status Item</th>
-                          </>
-                        )}
-                      </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                      {items.map(item => {
-                        const mat = materials.find(m => m.id === item.materialId);
-                        const tri = triageMap[item.id] || { attended: 0, purchase: 0 };
-                        
-                        return (
-                          <tr key={item.id} className="text-sm hover:bg-slate-50/50 transition-all">
-                            <td className="px-8 py-5">
-                                <p className="font-bold text-slate-800">{mat?.name}</p>
-                                <p className="text-[10px] font-black text-blue-500">{mat?.sku}</p>
-                            </td>
-                            <td className="px-6 py-5 text-center font-black">
-                              {item.quantityRequested} <span className="text-[9px] text-slate-400 font-medium">{mat?.unit}</span>
-                            </td>
-                            
-                            {canTriage ? (
-                              <>
-                                <td className="px-6 py-5">
-                                  <input 
-                                    type="number" 
-                                    className="w-20 p-2 border rounded-lg text-center font-black text-xs bg-emerald-50 border-emerald-100"
-                                    value={tri.attended}
-                                    onChange={(e) => {
-                                      const val = Number(e.target.value);
-                                      setTriageMap({
-                                        ...triageMap,
-                                        [item.id]: { attended: val, purchase: item.quantityRequested - val }
-                                      });
-                                    }}
-                                  />
-                                </td>
-                                <td className="px-6 py-5">
-                                  <input 
-                                    type="number" 
-                                    className="w-20 p-2 border rounded-lg text-center font-black text-xs bg-blue-50 border-blue-100"
-                                    value={tri.purchase}
-                                    onChange={(e) => {
-                                      const val = Number(e.target.value);
-                                      setTriageMap({
-                                        ...triageMap,
-                                        [item.id]: { purchase: val, attended: item.quantityRequested - val }
-                                      });
-                                    }}
-                                  />
-                                </td>
-                                <td className="px-8 py-5 text-right">
-                                  <button 
-                                    onClick={() => handleConfirmItemTriage(item.id)}
-                                    className={`w-10 h-10 rounded-xl transition-all flex items-center justify-center ${item.status === 'PENDING' ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-100 text-slate-400 cursor-default'}`}
-                                  >
-                                    <i className={`fas ${item.status === 'PENDING' ? 'fa-check' : 'fa-check-double'}`}></i>
-                                  </button>
-                                </td>
-                              </>
-                            ) : (
-                              <>
-                                <td className="px-6 py-5 text-center font-black text-emerald-600">{item.quantityFulfilled}</td>
-                                <td className="px-8 py-5 text-right">
-                                  <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${
-                                    item.status === 'PENDING' ? 'bg-gray-100 text-gray-400' :
-                                    item.status === 'FROM_STOCK' ? 'bg-emerald-100 text-emerald-600' :
-                                    item.status === 'FOR_PURCHASE' ? 'bg-blue-100 text-blue-600' :
-                                    item.status === 'SEPARATION' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'
-                                  }`}>
-                                    {item.status.replace('_', ' ')}
-                                  </span>
-                                </td>
-                              </>
-                            )}
-                          </tr>
-                        )
-                      })}
-                  </tbody>
-                </table>
-              </div>
+              <table className="w-full text-left">
+                <thead className="text-[9px] font-black uppercase text-slate-400 border-b">
+                    <tr>
+                      <th className="px-8 py-4">Item</th>
+                      <th className="px-6 py-4 text-center">Solicitado</th>
+                      {canTriage ? (
+                        <>
+                          <th className="px-6 py-4 text-center">Do Estoque Central</th>
+                          <th className="px-6 py-4 text-center">Para Compras</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="px-6 py-4 text-center">Atendido</th>
+                          <th className="px-8 py-4 text-right">Status</th>
+                        </>
+                      )}
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                    {items.map(item => {
+                      const mat = materials.find(m => m.id === item.materialId);
+                      const tri = triageMap[item.id] || { attended: 0, purchase: 0 };
+                      return (
+                        <tr key={item.id} className="text-sm hover:bg-slate-50/50 transition-all">
+                          <td className="px-8 py-5">
+                              <p className="font-bold text-slate-800">{mat?.name}</p>
+                              <p className="text-[10px] font-black text-blue-500">{mat?.sku}</p>
+                          </td>
+                          <td className="px-6 py-5 text-center font-black">{item.quantityRequested}</td>
+                          {canTriage ? (
+                            <>
+                              <td className="px-6 py-5">
+                                <input type="number" className="w-20 p-2 border rounded-lg text-center text-xs font-black bg-emerald-50" value={tri.attended} onChange={e => setTriageMap({...triageMap, [item.id]: { ...tri, attended: Number(e.target.value), purchase: item.quantityRequested - Number(e.target.value) }})} />
+                              </td>
+                              <td className="px-6 py-5">
+                                <input type="number" className="w-20 p-2 border rounded-lg text-center text-xs font-black bg-blue-50" value={tri.purchase} onChange={e => setTriageMap({...triageMap, [item.id]: { ...tri, purchase: Number(e.target.value), attended: item.quantityRequested - Number(e.target.value) }})} />
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="px-6 py-5 text-center font-black text-emerald-600">{item.quantityFulfilled}</td>
+                              <td className="px-8 py-5 text-right">
+                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${item.status === 'PENDING' ? 'bg-gray-100 text-gray-400' : 'bg-blue-100 text-blue-600'}`}>{item.status}</span>
+                              </td>
+                            </>
+                          )}
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
            </div>
         </div>
 
         <div className="space-y-6">
-           <DocumentPanel relatedId={id} entityType="RM" onUpdate={loadData} />
-           
            <div className="bg-slate-900 p-6 rounded-2xl shadow-xl text-white">
-              <h3 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center justify-between">
-                 Rastreabilidade
-                 <i className="fas fa-fingerprint text-blue-500"></i>
-              </h3>
+              <h3 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center justify-between">Rastreabilidade <i className="fas fa-fingerprint text-blue-500"></i></h3>
               <div className="space-y-4">
-                 <div className="flex gap-4">
-                    <div className="w-1 h-8 bg-blue-600 rounded-full"></div>
-                    <div>
-                       <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Solicitante</p>
-                       <p className="text-xs font-bold">{requester?.name || '---'}</p>
-                    </div>
-                 </div>
-                 <div className="flex gap-4">
-                    <div className="w-1 h-8 bg-slate-700 rounded-full"></div>
-                    <div>
-                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Prioridade</p>
-                       <p className="text-xs font-bold">{rm.priority}</p>
-                    </div>
-                 </div>
+                 <div className="flex gap-4"><div className="w-1 h-8 bg-blue-600 rounded-full"></div><div><p className="text-[10px] font-black text-blue-400 uppercase leading-none mb-1">Solicitante</p><p className="text-xs font-bold">{requester?.name || '---'}</p></div></div>
+                 <button onClick={() => setShowLogs(true)} className="mt-8 w-full py-3 border border-slate-700 rounded-xl text-[10px] font-black uppercase text-slate-500 hover:text-white transition-all">VER AUDITORIA</button>
               </div>
-              <button onClick={() => setShowLogs(true)} className="mt-8 w-full py-3 border border-slate-700 rounded-xl text-[10px] font-black uppercase text-slate-500 hover:text-white hover:border-blue-600 transition-all">VER AUDITORIA</button>
            </div>
+           <DocumentPanel relatedId={id} entityType="RM" onUpdate={loadData} />
         </div>
       </div>
 
       {showLogs && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl h-[600px] flex flex-col">
+          <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl h-[600px] flex flex-col animate-in zoom-in-95">
             <div className="p-6 border-b flex justify-between items-center bg-slate-50">
-               <div><h2 className="text-lg font-black text-slate-800">Histórico - RM #{rm.id}</h2><p className="text-[10px] text-slate-400 font-black uppercase">Log de Operações</p></div>
-               <button onClick={() => setShowLogs(false)} className="w-10 h-10 flex items-center justify-center text-slate-400 hover:text-slate-800"><i className="fas fa-times"></i></button>
+               <div><h2 className="text-lg font-black text-slate-800">Log de Auditoria - RM #{rm.id}</h2></div>
+               <button onClick={() => setShowLogs(false)} className="text-slate-400 hover:text-slate-800"><i className="fas fa-times"></i></button>
             </div>
             <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
                {logs.map(log => (
                  <div key={log.id} className="flex gap-4 items-start p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     <div className="text-blue-600 pt-1"><i className="fas fa-history text-sm"></i></div>
                     <div className="flex-1">
-                       <div className="flex justify-between items-center mb-1">
-                          <p className="text-xs font-black text-slate-800 uppercase tracking-tighter">{log.action}</p>
-                          <p className="text-[9px] font-bold text-slate-400">{new Date(log.timestamp).toLocaleString()}</p>
-                       </div>
-                       <p className="text-xs text-slate-600 leading-relaxed mb-2">{log.details}</p>
-                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest"><i className="fas fa-user mr-1"></i> {log.userName}</p>
+                       <div className="flex justify-between items-center mb-1"><p className="text-xs font-black text-slate-800 uppercase tracking-tighter">{log.action}</p><p className="text-[9px] font-bold text-slate-400">{new Date(log.timestamp).toLocaleString()}</p></div>
+                       <p className="text-xs text-slate-600 mb-2">{log.details}</p>
+                       <p className="text-[9px] font-black text-slate-400 uppercase"><i className="fas fa-user mr-1"></i> {log.userName}</p>
                     </div>
                  </div>
                ))}

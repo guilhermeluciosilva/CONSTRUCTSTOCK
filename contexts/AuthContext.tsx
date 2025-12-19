@@ -38,40 +38,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const hasPermission = (permission: Permission, targetScope?: Scope): boolean => {
     if (!user) return false;
 
-    // Verifica se alguma das atribuições do usuário concede a permissão solicitada no escopo alvo
     return user.roleAssignments.some(ra => {
       const rolePerms = ROLE_PERMISSIONS[ra.role] || [];
+      const customPerms = ra.customPermissions || [];
       
-      // 1. O papel do usuário possui essa permissão?
-      if (!rolePerms.includes(permission)) return false;
+      // 1. O papel do usuário OU as permissões customizadas possuem essa permissão?
+      if (!rolePerms.includes(permission) && !customPerms.includes(permission)) return false;
 
-      // 2. Se não houver escopo alvo (ex: verificação genérica de menu), 
-      // basta ter a permissão em algum lugar.
+      // 2. Se não houver escopo alvo (ex: verificação genérica de menu), basta ter a permissão.
       if (!targetScope) return true;
 
-      // 3. Validação de Tenant (Empresa)
+      // 3. Validação de Tenant
       if (ra.scope.tenantId !== targetScope.tenantId) return false;
 
       // 4. Lógica de Hierarquia de Escopo:
-      // Se a atribuição do usuário é global (só tenant), ele tem acesso a tudo.
       if (!ra.scope.workId && !ra.scope.warehouseId) return true;
-
-      // Se o alvo da verificação é global, mas o usuário é restrito, 
-      // permitimos a visão (ex: ver o menu), mas a filtragem de dados cuidará do resto.
       if (!targetScope.workId && !targetScope.warehouseId) return true;
 
-      // Se a atribuição do usuário é de Obra:
       if (ra.scope.workId) {
-        // Bloqueia se a obra alvo for diferente da obra permitida
         if (targetScope.workId && ra.scope.workId !== targetScope.workId) return false;
       }
 
-      // Se a atribuição do usuário é de Almoxarifado:
       if (ra.scope.warehouseId) {
-        // Bloqueia se o almoxarifado alvo for diferente do permitido
         if (targetScope.warehouseId && ra.scope.warehouseId !== targetScope.warehouseId) return false;
-        // Se o alvo for uma obra, mas o usuário for restrito a um almox dela, 
-        // ele tem acesso à obra (visão parcial).
       }
 
       return true;

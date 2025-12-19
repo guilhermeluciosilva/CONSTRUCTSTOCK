@@ -58,6 +58,16 @@ class ApiService {
   }
   private save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.db)); }
 
+  private logAudit(data: Omit<AuditLog, 'id' | 'timestamp'>) {
+    const log: AuditLog = {
+      ...data,
+      id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      timestamp: new Date().toISOString()
+    };
+    this.db.auditLogs.push(log);
+    this.save();
+  }
+
   async onboard(adminData: any, companyData: any) {
     const tenantId = `t-${Date.now()}`;
     const unitId = `u-${Date.now()}`;
@@ -90,16 +100,13 @@ class ApiService {
     this.db.works.push(newUnit);
     this.db.users.push(newUser);
 
-    if (companyData.operationType === OperationType.FACTORY) {
-      const secId = `sec-${Date.now()}`;
-      this.db.sectors.push({ id: secId, unitId, name: 'Produção Central', active: true });
-      this.db.warehouses.push({ id: `wh-${Date.now()}`, unitId, workId: unitId, sectorId: secId, name: 'Estoque Geral', isCentral: true, active: true });
-    } else {
-      // Para STORE e CONSTRUCTION, agora sempre criamos um 'Estoque Geral' por padrão
-      this.db.warehouses.push({ id: `wh-${Date.now()}`, unitId, workId: unitId, name: 'Estoque Geral', isCentral: true, active: true });
-    }
-
+    this.db.warehouses.push({ id: `wh-${Date.now()}`, unitId, workId: unitId, name: 'Estoque Geral', isCentral: true, active: true });
+    
     this.save();
+    this.logAudit({ 
+      tenantId, entityId: tenantId, entityType: 'ORG', action: 'ONBOARDING', 
+      userId: newUser.id, userName: newUser.name, details: 'Empresa criada via onboarding' 
+    });
     return newUser;
   }
 
@@ -131,8 +138,14 @@ class ApiService {
     return newWh;
   }
 
-  async createUser(name: string, email: string, tenantId: string): Promise<User> {
-    const newUser: User = { id: `u${Date.now()}`, name, email, roleAssignments: [{ role: Role.VIEWER, scope: { tenantId } }] };
+  async createUser(name: string, email: string, tenantId: string, password?: string): Promise<User> {
+    const newUser: User = { 
+      id: `u${Date.now()}`, 
+      name, 
+      email, 
+      password: password || '123456',
+      roleAssignments: [] 
+    };
     this.db.users.push(newUser);
     this.save();
     return newUser;
@@ -140,7 +153,15 @@ class ApiService {
 
   async updateUserAssignments(userId: string, roleAssignments: RoleAssignment[]) {
     const user = this.db.users.find(u => u.id === userId);
-    if (user) { user.roleAssignments = roleAssignments; this.save(); }
+    if (user) { 
+      user.roleAssignments = roleAssignments; 
+      this.save(); 
+      this.logAudit({ 
+        tenantId: roleAssignments[0]?.scope.tenantId || 'system', 
+        entityId: userId, entityType: 'USER', action: 'UPDATE_PERMISSIONS', 
+        userId: 'admin', userName: 'Administrador', details: 'Alteração de cargos e escopos' 
+      });
+    }
   }
 
   async updateUnitModules(unitId: string, enabledModuleIds: string[]) {
@@ -148,9 +169,7 @@ class ApiService {
     if (unit) { unit.enabledModuleIds = enabledModuleIds; this.save(); }
   }
 
-  async getRMs(scope: Scope) { 
-    return this.db.rms.filter(r => r.tenantId === scope.tenantId); 
-  }
+  async getRMs(scope: Scope) { return this.db.rms.filter(r => r.tenantId === scope.tenantId); }
 
   async getRMById(id: string) {
     const rm = this.db.rms.find(r => r.id === id);
@@ -164,7 +183,7 @@ class ApiService {
     const newRM: RM = {
       ...data,
       id: rmId,
-      requesterId: this.db.users[0].id,
+      requesterId: data.requesterId || 'u1',
       createdAt: new Date().toISOString(),
       status: RMStatus.WAITING_L1
     };
@@ -180,13 +199,19 @@ class ApiService {
       });
     });
     this.save();
+    this.logAudit({ 
+      tenantId: data.tenantId, entityId: rmId, entityType: 'RM', action: 'CREATE', 
+      userId: newRM.requesterId, userName: 'Usuário', details: 'Requisição de material criada' 
+    });
     return newRM;
   }
 
+  // Novo método para atualizar RM
   async updateRM(id: string, data: any, items: any[]) {
     const idx = this.db.rms.findIndex(r => r.id === id);
     if (idx !== -1) {
       this.db.rms[idx] = { ...this.db.rms[idx], ...data };
+      // Remove old items and add new ones
       this.db.rmItems = this.db.rmItems.filter(i => i.rmId !== id);
       items.forEach(i => {
         this.db.rmItems.push({
@@ -199,14 +224,23 @@ class ApiService {
         });
       });
       this.save();
+      this.logAudit({ 
+        tenantId: data.tenantId, entityId: id, entityType: 'RM', action: 'UPDATE', 
+        userId: data.requesterId || 'u1', userName: 'Usuário', details: 'Requisição de material atualizada' 
+      });
     }
   }
 
-  async updateRMStatus(id: string, status: RMStatus) {
+  async updateRMStatus(id: string, status: RMStatus, userId: string = 'system') {
     const rm = this.db.rms.find(r => r.id === id);
     if (rm) {
+      const oldStatus = rm.status;
       rm.status = status;
       this.save();
+      this.logAudit({ 
+        tenantId: rm.tenantId, entityId: id, entityType: 'RM', action: 'STATUS_CHANGE', 
+        userId, userName: 'Sistema', details: `De ${oldStatus} para ${status}` 
+      });
     }
   }
 
@@ -219,11 +253,45 @@ class ApiService {
     }
   }
 
+  async processRMFulfillment(rmId: string, itemsTriage: any[], userId: string) {
+    const { rm, items } = await this.getRMById(rmId);
+    
+    // 1. Filtrar itens que serão atendidos do estoque central
+    const itemsToTransfer = itemsTriage.filter(i => i.attended > 0);
+    
+    if (itemsToTransfer.length > 0) {
+      // Criar Transferência Automática
+      const centralWh = this.db.warehouses.find(w => w.unitId === rm.unitId && w.isCentral) || this.db.warehouses[0];
+      const transferId = await this.createTransfer({
+        tenantId: rm.tenantId,
+        originWarehouseId: centralWh.id,
+        destinationWarehouseId: rm.warehouseId,
+        rmId: rm.id
+      }, itemsToTransfer.map(i => ({
+        materialId: i.materialId,
+        quantityRequested: i.attended,
+        rmItemId: i.id
+      })));
+      
+      this.logAudit({ 
+        tenantId: rm.tenantId, entityId: rmId, entityType: 'RM', action: 'FULFILL_FROM_STOCK', 
+        userId, userName: 'Almox Central', details: `Gerada transferência ${transferId}` 
+      });
+    }
+
+    // 2. Atualizar status dos itens na RM
+    itemsTriage.forEach(async (t) => {
+      await this.triageRMItem(t.id, t.attended, t.purchase);
+    });
+
+    // 3. Atualizar status da RM
+    await this.updateRMStatus(rmId, RMStatus.IN_FULFILLMENT, userId);
+  }
+
   async addMovement(data: any) {
     const movement: Movement = {
       ...data,
-      id: `MOV-${Date.now()}`,
-      userId: this.db.users[0].id,
+      id: `MOV-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
       timestamp: new Date().toISOString()
     };
     this.db.movements.push(movement);
@@ -245,13 +313,15 @@ class ApiService {
   }
 
   async getMovements(scope: Scope) { 
-    if (scope.warehouseId) return this.db.movements.filter(m => m.warehouseId === scope.warehouseId);
-    return this.db.movements; 
+    return this.db.movements.filter(m => 
+      (!scope.warehouseId || m.warehouseId === scope.warehouseId)
+    ); 
   }
 
   async getStock(scope: Scope) { 
-    if (scope.warehouseId) return this.db.stocks.filter(s => s.warehouseId === scope.warehouseId);
-    return this.db.stocks; 
+    return this.db.stocks.filter(s => 
+      (!scope.warehouseId || s.warehouseId === scope.warehouseId)
+    ); 
   }
 
   async getPurchaseBacklog(tenantId: string) {
@@ -282,7 +352,11 @@ class ApiService {
       });
     });
     this.save();
-    return newPO;
+    this.logAudit({ 
+      tenantId: data.tenantId, entityId: poId, entityType: 'PO', action: 'CREATE', 
+      userId: data.userId || 'u1', userName: 'Comprador', details: `Pedido gerado para fornecedor ${data.supplierId}` 
+    });
+    return poId;
   }
 
   async getPOById(id: string) {
@@ -319,6 +393,19 @@ class ApiService {
     if (t) {
       t.status = 'IN_TRANSIT';
       t.dispatchedAt = new Date().toISOString();
+      
+      // Movimentar estoque na origem
+      const items = this.db.transferItems.filter(i => i.transferId === id);
+      items.forEach(item => {
+        this.addMovement({
+          warehouseId: t.originWarehouseId,
+          materialId: item.materialId,
+          type: 'TRANSFER_OUT',
+          quantity: item.quantitySent,
+          description: `Despacho Guia ${id}`
+        });
+      });
+      
       this.save();
     }
   }
@@ -330,7 +417,17 @@ class ApiService {
       t.receivedAt = new Date().toISOString();
       const items = this.db.transferItems.filter(i => i.transferId === id);
       items.forEach(item => {
-        item.quantityReceived = receivedQtys[item.id] || 0;
+        const received = receivedQtys[item.id] || 0;
+        item.quantityReceived = received;
+        
+        // Movimentar estoque no destino
+        this.addMovement({
+          warehouseId: t.destinationWarehouseId,
+          materialId: item.materialId,
+          type: 'TRANSFER_IN',
+          quantity: received,
+          description: `Recebimento Guia ${id}`
+        });
       });
       this.save();
     }
@@ -355,7 +452,7 @@ class ApiService {
       });
     });
     this.save();
-    return newT;
+    return transferId;
   }
 
   async createMaterial(data: any) {
@@ -387,8 +484,8 @@ class ApiService {
     return newS;
   }
 
-  async uploadDocument(data: any) {
-    const newD = { ...data, id: `doc-${Date.now()}`, uploadedAt: new Date().toISOString() };
+  async uploadDocument(data: any, tenantId: string) {
+    const newD = { ...data, id: `doc-${Date.now()}`, uploadedAt: new Date().toISOString(), tenantId };
     this.db.documents.push(newD);
     this.save();
     return newD;
@@ -404,11 +501,11 @@ class ApiService {
   }
   
   async getAllDocuments(tenantId: string) { 
-    return this.db.documents; 
+    return this.db.documents.filter(d => d.tenantId === tenantId); 
   }
   
   async getAuditLogsByEntity(entityId: string) { 
-    return this.db.auditLogs.filter(l => l.entityId === entityId); 
+    return this.db.auditLogs.filter(l => l.entityId === entityId).reverse(); 
   }
 
   async createSale(data: any, items: any[]) {
@@ -435,12 +532,16 @@ class ApiService {
     return newSale;
   }
 
-  async getSales(tenantId: string) { 
-    return this.db.sales.filter(s => s.tenantId === tenantId); 
-  }
+  async getSales(tenantId: string) { return this.db.sales.filter(s => s.tenantId === tenantId); }
 
   async importCSVBatch(lines: any[], config: any) {
-    return { success: lines.length };
+    const results = { success: 0, errors: 0 };
+    // Simulação de processamento de lote
+    lines.forEach(line => {
+       if (line.status === 'OK') results.success++;
+       else results.errors++;
+    });
+    return results;
   }
 }
 

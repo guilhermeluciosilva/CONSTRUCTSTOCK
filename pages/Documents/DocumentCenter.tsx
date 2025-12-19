@@ -37,6 +37,7 @@ export const DocumentCenter: React.FC = () => {
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
+        // Fix: Added tenantId argument
         await api.uploadDocument({
           name: uploadForm.name || file.name,
           type: uploadForm.type,
@@ -44,7 +45,7 @@ export const DocumentCenter: React.FC = () => {
           size: file.size,
           relatedId: uploadForm.relatedId,
           base64: event.target?.result as string
-        });
+        }, currentScope!.tenantId);
         notify('Documento arquivado com sucesso!', 'success');
         setShowModal(false);
         loadDocs();

@@ -69,6 +69,7 @@ export const SupplierManagement: React.FC = () => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         const base64 = e.target?.result as string;
+        // Fix: Added tenantId argument
         await api.uploadDocument({
           name: file.name,
           type: selectedDocType,
@@ -76,7 +77,7 @@ export const SupplierManagement: React.FC = () => {
           size: file.size,
           relatedId: editingId,
           base64: base64
-        });
+        }, form.tenantId || '');
         const docs = await api.getDocuments(editingId);
         setDocuments(docs);
         notify('Documento anexado!', 'success');

@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useApp } from '../contexts/AppContext';
 import { useNotification } from '../contexts/NotificationContext';
 import { Document } from '../types';
 
@@ -13,6 +14,7 @@ interface DocumentPanelProps {
 
 export const DocumentPanel: React.FC<DocumentPanelProps> = ({ relatedId, entityType, onUpdate }) => {
   const { hasPermission } = useAuth();
+  const { currentScope } = useApp();
   const { notify } = useNotification();
   const [docs, setDocs] = useState<Document[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -34,6 +36,7 @@ export const DocumentPanel: React.FC<DocumentPanelProps> = ({ relatedId, entityT
     const reader = new FileReader();
     reader.onload = async (event) => {
       try {
+        // Fix: Added tenantId argument
         await api.uploadDocument({
           name: file.name,
           type: selectedType,
@@ -41,7 +44,7 @@ export const DocumentPanel: React.FC<DocumentPanelProps> = ({ relatedId, entityT
           size: file.size,
           relatedId: relatedId,
           base64: event.target?.result as string
-        });
+        }, currentScope!.tenantId);
         notify('Documento anexado!', 'success');
         load();
         if (onUpdate) onUpdate();

@@ -48,6 +48,7 @@ export interface Scope {
 export interface RoleAssignment {
   role: Role;
   scope: Scope;
+  customPermissions?: Permission[]; // Permissões extras dadas manualmente
 }
 
 export interface User {
@@ -248,6 +249,7 @@ export interface Document {
   relatedId: string; 
   uploadedAt: string;
   base64?: string;
+  tenantId: string;
 }
 
 export interface AuditLog {
