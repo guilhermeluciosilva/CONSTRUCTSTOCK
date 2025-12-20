@@ -1,5 +1,4 @@
-
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import React, { ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   // Children must be optional to satisfy the ReactNode type in some contexts
@@ -15,8 +14,8 @@ interface State {
 /**
  * ErrorBoundary component to catch rendering errors and display a fallback UI.
  */
-// Fix: Explicitly importing and extending Component to resolve inheritance and property availability issues (setState, props)
-export class ErrorBoundary extends Component<Props, State> {
+// Fix: Extending React.Component explicitly to ensure inheritance of setState and props works correctly in TypeScript
+export class ErrorBoundary extends React.Component<Props, State> {
   // Local state definition for tracking errors
   public state: State = {
     hasError: false,
@@ -35,7 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   // Use componentDidCatch to log error information and update state
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Fix: Accessing setState from inherited Component
+    // Fix: Accessing setState from the correctly inherited React.Component class
     this.setState({ errorInfo });
     console.error("Uncaught error:", error, errorInfo);
   }
@@ -67,7 +66,7 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Fix: Accessing props from inherited Component
+    // Fix: Accessing children from this.props which is now properly typed by extending React.Component
     return this.props.children;
   }
 }
