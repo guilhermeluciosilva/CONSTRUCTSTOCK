@@ -35,7 +35,7 @@ export const ReportCenter: React.FC = () => {
     }
   }, [currentScope]);
 
-  if (!hasPermission('REPORT_VIEW', currentScope || undefined)) return <AccessDenied />;
+  if (!hasPermission('REPORT_VIEW')) return <AccessDenied />;
 
   const filteredMovs = movements.filter(m => {
     const matchStart = !filters.start || new Date(m.timestamp) >= new Date(filters.start);
@@ -60,7 +60,7 @@ export const ReportCenter: React.FC = () => {
           <h1 className="text-2xl font-black text-slate-800 tracking-tight">Inteligência de Suprimentos</h1>
           <p className="text-gray-500 text-sm italic">Análise consolidada de desempenho e ruptura do escopo ativo.</p>
         </div>
-        {hasPermission('REPORT_EXPORT', currentScope || undefined) && (
+        {hasPermission('REPORT_EXPORT') && (
            <button onClick={() => notify('Iniciando exportação consolidada...', 'info')} className="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg flex items-center gap-2">
              <i className="fas fa-file-excel text-emerald-400"></i> Exportar Dados
            </button>

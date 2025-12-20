@@ -8,7 +8,6 @@ import { DocumentPanel } from '../../components/DocumentPanel';
 import { PO, POItem, Material, Supplier, Work, Tenant } from '../../types';
 import { formatCurrency } from '../../lib/utils';
 import { STATUS_COLORS } from '../../constants';
-import { scopeFromPO } from '../../utils/entityScope';
 
 export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onBack }) => {
   const { hasPermission } = useAuth();
@@ -19,12 +18,8 @@ export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onB
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = async () => {
-    setIsLoading(true);
-    setLoadError(null);
     try {
       const res = await api.getPOById(id);
       const mats = await api.getMaterials();
@@ -32,12 +27,7 @@ export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onB
       setData(res);
       setMaterials(mats);
       setSupplier(sup.find(s => s.id === res.po.supplierId) || null);
-      setIsLoading(false);
-    } catch (err) { 
-      setLoadError('Falha ao carregar PO');
-      setIsLoading(false);
-      notify('Erro ao carregar PO', 'error'); 
-    }
+    } catch (err) { notify('Erro ao carregar PO', 'error'); }
   };
 
   useEffect(() => { load(); }, [id]);
@@ -166,32 +156,7 @@ export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onB
     printWindow.document.close();
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <i className="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4 block"></i>
-          <p className="text-slate-600 font-bold">Carregando pedido...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loadError || !data) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <i className="fas fa-exclamation-circle text-4xl text-rose-600 mb-4 block"></i>
-          <p className="text-slate-600 font-bold mb-4">{loadError || 'Falha ao carregar pedido'}</p>
-          <button onClick={load} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition-all">
-            Tentar Novamente
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const poScope = scopeFromPO(data.po);
+  if (!data) return null;
 
   const currentWork = works.find(w => w.id === data.po.workId);
 
@@ -220,8 +185,8 @@ export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onB
                   <i className="fas fa-file-pdf text-rose-400"></i> Gerar Ordem de Compra
                </button>
                <div className="w-px h-8 bg-slate-100 mx-2"></div>
-               {hasPermission('PO_EDIT', poScope) && <button onClick={startEdit} className="bg-white text-blue-600 border border-blue-100 px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-blue-50 transition-all">Editar Pedido</button>}
-               {hasPermission('PO_CLOSE', poScope) && (
+               {hasPermission('PO_EDIT') && <button onClick={startEdit} className="bg-white text-blue-600 border border-blue-100 px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-blue-50 transition-all">Editar Pedido</button>}
+               {hasPermission('PO_CLOSE') && (
                  <>
                    <button onClick={() => handleClose('CLOSED')} className="bg-emerald-600 text-white px-6 py-2 rounded-xl font-black text-xs uppercase shadow-lg shadow-emerald-200">Encerrar</button>
                    <button onClick={() => handleClose('CANCELED')} className="bg-white text-rose-600 border border-rose-100 px-6 py-2 rounded-xl font-black text-xs uppercase">Cancelar</button>

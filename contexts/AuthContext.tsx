@@ -51,12 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // 3. Validação de Tenant
       if (ra.scope.tenantId !== targetScope.tenantId) return false;
 
-      // 4. Validação de Setor (se a atribuição tem setor, o alvo deve ter o mesmo)
-      if (ra.scope.sectorId) {
-        if (!targetScope.sectorId || ra.scope.sectorId !== targetScope.sectorId) return false;
-      }
-
-      // 5. Lógica de Hierarquia de Escopo:
+      // 4. Lógica de Hierarquia de Escopo:
       if (!ra.scope.workId && !ra.scope.warehouseId) return true;
       if (!targetScope.workId && !targetScope.warehouseId) return true;
 
