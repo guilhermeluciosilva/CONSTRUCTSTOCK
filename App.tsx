@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { Layout } from './components/Layout';
+import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Onboarding } from './pages/Admin/Onboarding';
 import { Dashboard } from './pages/Dashboard';
@@ -31,11 +32,14 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { MENU_ITEMS } from './constants';
 import { Permission } from './types';
 
+type AuthView = 'landing' | 'login' | 'onboarding';
+
 const AppContent: React.FC = () => {
   const { user, loading, hasPermission } = useAuth();
   const { currentScope } = useApp();
   const [currentPath, setCurrentPath] = useState('/dashboard');
-  const [isOnboarding, setIsOnboarding] = useState(false);
+  const [authView, setAuthView] = useState<AuthView>('landing');
+  
   const [selectedRMId, setSelectedRMId] = useState<string | null>(null);
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null);
   const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
@@ -47,14 +51,16 @@ const AppContent: React.FC = () => {
       setSelectedRMId(null);
       setSelectedTransferId(null);
       setSelectedPOId(null);
+      setAuthView('landing');
     }
   }, [user]);
 
   if (loading) return <div className="flex items-center justify-center h-screen"><i className="fas fa-sync fa-spin text-3xl text-blue-600"></i></div>;
   
   if (!user) {
-    if (isOnboarding) return <Onboarding onBack={() => setIsOnboarding(false)} />;
-    return <Login onOnboard={() => setIsOnboarding(true)} />;
+    if (authView === 'onboarding') return <Onboarding onBack={() => setAuthView('landing')} />;
+    if (authView === 'login') return <Login onOnboard={() => setAuthView('onboarding')} />;
+    return <Landing onLogin={() => setAuthView('login')} onOnboard={() => setAuthView('onboarding')} />;
   }
 
   const handleNavigate = (path: string) => {

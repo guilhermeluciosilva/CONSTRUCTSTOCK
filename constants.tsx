@@ -121,23 +121,29 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   SETTINGS_MANAGE: 'Configurações de Sistema'
 };
 
+export const MENU_CATEGORIES = {
+  MAIN: 'Principal',
+  OPERATIONAL: 'Operacional',
+  ADMIN: 'Administração',
+  SYSTEM: 'Sistema'
+};
+
 export const MENU_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-line', path: '/dashboard', minPermission: 'RM_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'sales', label: 'Vendas', icon: 'fa-cash-register', path: '/sales', minPermission: 'SALE_VIEW', allowedOps: [OperationType.STORE] },
-  { id: 'rm', label: 'Requisições', icon: 'fa-file-invoice', path: '/rm', minPermission: 'RM_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.FACTORY] },
-  { id: 'stock', label: 'Estoque', icon: 'fa-boxes-stacked', path: '/stock', minPermission: 'STOCK_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'movements', label: 'Extrato Almox', icon: 'fa-list-ul', path: '/movements', minPermission: 'LEDGER_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'transfers', label: 'Transferências', icon: 'fa-truck-loading', path: '/transfers', minPermission: 'TRANSFER_RECEIVE', allowedOps: [OperationType.CONSTRUCTION, OperationType.FACTORY] },
-  { id: 'purchases', label: 'Compras / POs', icon: 'fa-shopping-cart', path: '/purchases', minPermission: 'PO_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'documents', label: 'Documentos', icon: 'fa-folder-open', path: '/documents', minPermission: 'DOC_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'reports', label: 'Relatórios', icon: 'fa-chart-pie', path: '/reports', minPermission: 'REPORT_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'admin_users', label: 'Usuários', icon: 'fa-users-cog', path: '/admin/users', minPermission: 'USER_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'admin_org', label: 'Organização', icon: 'fa-sitemap', path: '/admin/org', minPermission: 'ORG_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'admin_materials', label: 'Materiais', icon: 'fa-tag', path: '/admin/materials', minPermission: 'MATERIAL_CATALOG_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'admin_suppliers', label: 'Fornecedores', icon: 'fa-handshake', path: '/admin/suppliers', minPermission: 'SUPPLIER_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  { id: 'admin_import', label: 'Importação CSV', icon: 'fa-file-csv', path: '/admin/import', minPermission: 'IMPORT_CSV', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
-  // Configurações acessíveis a todos os usuários para autogestão (Perfil/Senha)
-  { id: 'settings', label: 'Configurações', icon: 'fa-sliders-h', path: '/admin/settings', minPermission: 'RM_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY] },
+  { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-line', path: '/dashboard', minPermission: 'RM_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'MAIN' },
+  { id: 'sales', label: 'Vendas', icon: 'fa-cash-register', path: '/sales', minPermission: 'SALE_VIEW', allowedOps: [OperationType.STORE], category: 'OPERATIONAL' },
+  { id: 'rm', label: 'Requisições', icon: 'fa-file-invoice', path: '/rm', minPermission: 'RM_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.FACTORY], category: 'OPERATIONAL' },
+  { id: 'stock', label: 'Estoque', icon: 'fa-boxes-stacked', path: '/stock', minPermission: 'STOCK_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'OPERATIONAL' },
+  { id: 'movements', label: 'Extrato Almox', icon: 'fa-list-ul', path: '/movements', minPermission: 'LEDGER_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'OPERATIONAL' },
+  { id: 'transfers', label: 'Transferências', icon: 'fa-truck-loading', path: '/transfers', minPermission: 'TRANSFER_RECEIVE', allowedOps: [OperationType.CONSTRUCTION, OperationType.FACTORY], category: 'OPERATIONAL' },
+  { id: 'purchases', label: 'Compras / POs', icon: 'fa-shopping-cart', path: '/purchases', minPermission: 'PO_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'OPERATIONAL' },
+  { id: 'documents', label: 'Documentos', icon: 'fa-folder-open', path: '/documents', minPermission: 'DOC_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'OPERATIONAL' },
+  { id: 'reports', label: 'Relatórios', icon: 'fa-chart-pie', path: '/reports', minPermission: 'REPORT_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'OPERATIONAL' },
+  { id: 'admin_users', label: 'Usuários', icon: 'fa-users-cog', path: '/admin/users', minPermission: 'USER_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'ADMIN' },
+  { id: 'admin_org', label: 'Organização', icon: 'fa-sitemap', path: '/admin/org', minPermission: 'ORG_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'ADMIN' },
+  { id: 'admin_materials', label: 'Materiais', icon: 'fa-tag', path: '/admin/materials', minPermission: 'MATERIAL_CATALOG_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'ADMIN' },
+  { id: 'admin_suppliers', label: 'Fornecedores', icon: 'fa-handshake', path: '/admin/suppliers', minPermission: 'SUPPLIER_MANAGE', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'ADMIN' },
+  { id: 'admin_import', label: 'Importação CSV', icon: 'fa-file-csv', path: '/admin/import', minPermission: 'IMPORT_CSV', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'ADMIN' },
+  { id: 'settings', label: 'Configurações', icon: 'fa-sliders-h', path: '/admin/settings', minPermission: 'RM_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.FACTORY], category: 'SYSTEM' },
 ];
 
 export const STATUS_COLORS: Record<string, string> = {

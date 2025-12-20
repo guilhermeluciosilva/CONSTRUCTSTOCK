@@ -51,6 +51,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return labels[type][key];
   };
 
+  const setScopeNormalized = (newScope: Scope) => {
+    setCurrentScope(normalizeScope(newScope));
+  };
+
   const refreshMetadata = async () => {
     if (!currentScope?.tenantId) return;
 
@@ -67,6 +71,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (unitId) {
       const wh = await api.getWarehouses(unitId);
       setWarehouses([...wh]);
+      
+      // Lógica de Auto-Seleção: Se houver apenas 1 almoxarifado e nenhum selecionado, seleciona automaticamente
+      if (wh.length === 1 && !currentScope.warehouseId) {
+        setScopeNormalized({ ...currentScope, warehouseId: wh[0].id });
+      }
       
       // Carregamento real de setores se for Fábrica
       if (freshTenant?.operationType === OperationType.FACTORY) {
@@ -129,10 +138,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!user) return false;
     if (user.roleAssignments.some(ra => ra.role === Role.OWNER)) return true;
     return user.roleAssignments.some(ra => !ra.scope.warehouseId || ra.scope.warehouseId === whId);
-  };
-
-  const setScopeNormalized = (newScope: Scope) => {
-    setCurrentScope(normalizeScope(newScope));
   };
 
   return (
