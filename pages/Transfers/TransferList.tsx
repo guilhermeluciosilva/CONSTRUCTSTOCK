@@ -16,8 +16,7 @@ export const TransferList: React.FC<{ onDetail: (id: string) => void, onNew: () 
     if (currentScope) {
       api.getTransfers(currentScope).then(setTransfers);
       const loadLabels = async () => {
-         const tenants = await api.getTenants();
-         const tWorks = await api.getWorks(tenants.find(t => t.id === currentScope.tenantId)?.id || tenants[0].id);
+         const tWorks = await api.getWorks(currentScope.tenantId);
          let list: Warehouse[] = [];
          for (const w of tWorks) { list = [...list, ...(await api.getWarehouses(w.id))]; }
          setAllWhs(list);
@@ -30,7 +29,7 @@ export const TransferList: React.FC<{ onDetail: (id: string) => void, onNew: () 
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex justify-between items-center">
         <div><h1 className="text-2xl font-black text-slate-800 tracking-tight">Transferências Logísticas</h1><p className="text-gray-500 text-sm italic">Gestão de trânsito entre canteiros e central.</p></div>
-        {hasPermission('TRANSFER_CREATE') && (
+        {hasPermission('TRANSFER_CREATE', currentScope || undefined) && (
            <button onClick={onNew} className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-black text-xs uppercase shadow-lg hover:bg-blue-700 transition-all">Nova Transferência</button>
         )}
       </div>

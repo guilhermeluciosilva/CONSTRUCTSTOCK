@@ -87,10 +87,10 @@ export const DocumentPanel: React.FC<DocumentPanelProps> = ({ relatedId, entityT
                </div>
             </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-               {hasPermission('DOC_DOWNLOAD') && (
+               {hasPermission('DOC_DOWNLOAD', currentScope || undefined) && (
                  <button onClick={() => window.open(doc.base64)} className="w-7 h-7 flex items-center justify-center bg-white border rounded-lg text-slate-400 hover:text-blue-600"><i className="fas fa-download text-[10px]"></i></button>
                )}
-               {hasPermission('DOC_DELETE') && (
+               {hasPermission('DOC_DELETE', currentScope || undefined) && (
                  <button onClick={() => deleteDoc(doc.id)} className="w-7 h-7 flex items-center justify-center bg-white border rounded-lg text-slate-400 hover:text-rose-600"><i className="fas fa-trash text-[10px]"></i></button>
                )}
             </div>
@@ -104,7 +104,7 @@ export const DocumentPanel: React.FC<DocumentPanelProps> = ({ relatedId, entityT
         )}
       </div>
 
-      {hasPermission('DOC_UPLOAD') && (
+      {hasPermission('DOC_UPLOAD', currentScope || undefined) && (
         <div className="p-4 bg-gray-50/50 border-t space-y-3">
           <select 
             className="w-full p-2 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase outline-none focus:ring-1 focus:ring-blue-500"

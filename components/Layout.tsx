@@ -16,7 +16,7 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
   if (!user) return <>{children}</>;
 
   const activeMenuItems = MENU_ITEMS.filter(item => {
-    const permOk = hasPermission(item.minPermission as Permission, currentScope ? { tenantId: currentScope.tenantId } : undefined);
+    const permOk = hasPermission(item.minPermission as Permission, currentScope || undefined);
     if (!permOk) return false;
 
     const opOk = activeTenant ? item.allowedOps.includes(activeTenant.operationType) : true;

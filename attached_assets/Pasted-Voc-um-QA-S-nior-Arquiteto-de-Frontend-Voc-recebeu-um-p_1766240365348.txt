@@ -1,0 +1,192 @@
+Você é um QA Sênior + Arquiteto de Frontend.
+Você recebeu um projeto existente (ZIP V14) e deve corrigir bugs e heranças SEM criar backend/infra.
+Obrigatório: reaproveitar o máximo do código existente.
+Proibido: reescrever o sistema do zero.
+Proibido: inventar features sem amarrar em arquivos reais.
+
+OBJETIVO PRINCIPAL
+
+Eliminar “tela em branco” e comportamentos inconsistentes de permissão.
+
+Padronizar autorização por escopo (tenant/unidade/setor/almoxarifado) em TODO o front.
+
+Consertar heranças (workId vs unitId; setor; rotas; carregamentos).
+
+TAREFA 1 — Padronizar autorização “sempre com escopo”
+1.1 Criar helper único de permissão com escopo obrigatório
+
+Criar arquivo NOVO: utils/authz.ts
+
+Implementar:
+
+requireScope(scope) (valida tenantId e retorna uma versão normalizada)
+
+can(permission, scope, hasPermissionFn) (wrapper que:
+
+normaliza escopo via normalizeScope de utils/scope.ts
+
+chama hasPermission(permission, normalizedScope)
+
+nunca chama hasPermission(permission) sem scope)
+
+1.2 Corrigir chamadas sem escopo (obrigatório)
+
+Localizar e atualizar (no mínimo) estes arquivos, trocando chamadas hasPermission('X') por hasPermission('X', scopeCorreto):
+
+components/DocumentPanel.tsx
+
+Passar currentScope do useApp() para:
+
+DOC_UPLOAD, DOC_DOWNLOAD, DOC_DELETE
+
+pages/Documents/DocumentCenter.tsx
+
+Passar currentScope para:
+
+DOC_UPLOAD, DOC_DOWNLOAD, DOC_DELETE
+
+pages/Reports/ReportCenter.tsx
+
+Gate inicial deve ser: hasPermission('REPORT_VIEW', currentScope)
+
+Botão export: hasPermission('REPORT_EXPORT', currentScope)
+
+pages/Transfers/TransferList.tsx
+
+TRANSFER_CREATE deve usar hasPermission('TRANSFER_CREATE', currentScope)
+
+pages/Transfers/TransferDetail.tsx
+
+TRANSFER_DISPATCH e TRANSFER_RECEIVE devem usar escopo derivado da transferência (ver Tarefa 3)
+
+pages/Purchases/PODetail.tsx
+
+PO_EDIT e PO_CLOSE devem usar escopo derivado do PO (ver Tarefa 3)
+
+Critério de aceite: nenhuma tela crítica pode usar hasPermission('X') sem scope.
+
+TAREFA 2 — Menu e navegação devem usar o MESMO gate de permissão
+2.1 Corrigir o filtro de menu para usar currentScope completo
+
+Arquivo: components/Layout.tsx
+
+Hoje existe:
+
+hasPermission(item.minPermission, { tenantId: currentScope.tenantId })
+
+Trocar para:
+
+hasPermission(item.minPermission, currentScope)
+
+Garantir que menu e App.tsx -> handleNavigate usem a mesma lógica (sem divergência).
+
+Critério de aceite: se o menu mostra um item, ao clicar ele não pode ser negado por permissão (exceto se o escopo mudou).
+
+TAREFA 3 — “Escopo por entidade” (RM / PO / TRANSFER) para botões e ações
+3.1 Criar utilitário para construir escopo de entidade
+
+Criar arquivo NOVO: utils/entityScope.ts
+
+Funções:
+
+scopeFromRM(rm) => { tenantId, unitId/workId, warehouseId?, sectorId? }
+
+scopeFromPO(po) => { tenantId, unitId/workId, warehouseId? } (conforme campos reais do PO no projeto)
+
+scopeFromTransfer(transfer) => { tenantId, unitId/workId?, warehouseId? }
+
+Usar normalizeScope de utils/scope.ts ao final.
+
+3.2 Aplicar nos detalhes
+
+pages/Transfers/TransferDetail.tsx
+
+Construir transferScope = scopeFromTransfer(data.transfer)
+
+Botões Despachar e Finalizar Conferência devem depender de:
+
+hasPermission('TRANSFER_DISPATCH', transferScope)
+
+hasPermission('TRANSFER_RECEIVE', transferScope)
+
+pages/Purchases/PODetail.tsx
+
+Construir poScope = scopeFromPO(po)
+
+Botões Editar Pedido e Encerrar Pedido:
+
+hasPermission('PO_EDIT', poScope)
+
+hasPermission('PO_CLOSE', poScope)
+
+Critério de aceite: permissões não podem “vazar” de uma unidade para outra.
+
+TAREFA 4 — Setor como herança real de autorização (quando existir)
+4.1 Ajustar regra em hasPermission para respeitar sectorId quando a atribuição tiver sectorId
+
+Arquivo: contexts/AuthContext.tsx
+
+Dentro de hasPermission(permission, targetScope?), adicionar regra:
+
+Se ra.scope.sectorId existir:
+
+Negar se targetScope.sectorId estiver vazio
+
+Negar se targetScope.sectorId !== ra.scope.sectorId
+
+(Manter a lógica atual de warehouse/work como está, mas o setor vira “condição adicional”)
+
+4.2 Garantir que currentScope carregue sectorId quando almoxarifado for selecionado
+
+Já existe em components/Layout.tsx ao escolher warehouse:
+
+sectorId: wh.sectorId
+
+Validar que wh.sectorId realmente existe no modelo Warehouse e está sendo persistido.
+
+Critério de aceite: cargos por setor não podem operar fora do setor selecionado.
+
+TAREFA 5 — Remover “tela em branco” em carregamentos
+5.1 TransferDetail não pode retornar null
+
+Arquivo: pages/Transfers/TransferDetail.tsx
+
+Trocar:
+
+if (!data) return null;
+
+Por:
+
+estado visual “Carregando transferência...” (loader)
+
+e estado “Falha ao carregar” com botão “Tentar novamente” (chama load())
+
+5.2 Padrão para outras telas
+
+Aplicar o mesmo padrão onde houver return null durante load (procurar por return null; em pages/).
+
+Critério de aceite: nenhuma rota principal fica “vazia” sem mensagem.
+
+TAREFA 6 — TransferList: corrigir busca desnecessária de tenants
+
+Arquivo: pages/Transfers/TransferList.tsx
+
+Substituir:
+
+const tenants = await api.getTenants(); ... api.getWorks(tenants.find(...))
+
+Por:
+
+const tWorks = await api.getWorks(currentScope.tenantId);
+
+Critério de aceite: menos chamadas e menos pontos de falha.
+
+TAREFA 7 — Corrigir herança do CSS faltando
+
+Escolher UMA opção:
+
+Criar arquivo novo index.css na raiz com conteúdo mínimo (pode ser vazio),(toggle) OU
+
+Remover <link rel="stylesheet" href="/index.css"> de index.html
+
+Critério de aceite: sem 404 de recurso básico (ou sem link apontando para arquivo inexistente).

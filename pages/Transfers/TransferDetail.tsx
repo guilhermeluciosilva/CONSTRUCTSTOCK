@@ -7,6 +7,7 @@ import { useApp } from '../../contexts/AppContext';
 import { DocumentPanel } from '../../components/DocumentPanel';
 import { Transfer, TransferItem, Material, Warehouse } from '../../types';
 import { STATUS_COLORS } from '../../constants';
+import { scopeFromTransfer } from '../../utils/entityScope';
 
 export const TransferDetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onBack }) => {
   const { hasPermission } = useAuth();
@@ -18,8 +19,12 @@ export const TransferDetail: React.FC<{ id: string, onBack: () => void }> = ({ i
   const [isProcessing, setIsProcessing] = useState(false);
   const [receivedQtys, setReceivedQtys] = useState<Record<string, number>>({});
   const [justification, setJustification] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = async () => {
+    setIsLoading(true);
+    setLoadError(null);
     try {
       const res = await api.getTransferById(id);
       const mats = await api.getMaterials();
@@ -33,7 +38,12 @@ export const TransferDetail: React.FC<{ id: string, onBack: () => void }> = ({ i
       let list: Warehouse[] = [];
       for (const w of tWorks) { list = [...list, ...(await api.getWarehouses(w.id))]; }
       setWarehouses(list);
-    } catch (err) { notify('Erro ao carregar transferência', 'error'); }
+      setIsLoading(false);
+    } catch (err) { 
+      setLoadError('Falha ao carregar transferência');
+      setIsLoading(false);
+      notify('Erro ao carregar transferência', 'error'); 
+    }
   };
 
   useEffect(() => { load(); }, [id]);
@@ -59,7 +69,32 @@ export const TransferDetail: React.FC<{ id: string, onBack: () => void }> = ({ i
     setIsProcessing(false);
   };
 
-  if (!data) return null;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <i className="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4 block"></i>
+          <p className="text-slate-600 font-bold">Carregando transferência...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError || !data) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <i className="fas fa-exclamation-circle text-4xl text-rose-600 mb-4 block"></i>
+          <p className="text-slate-600 font-bold mb-4">{loadError || 'Falha ao carregar transferência'}</p>
+          <button onClick={load} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-black text-xs uppercase hover:bg-blue-700 transition-all">
+            Tentar Novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const transferScope = scopeFromTransfer(data.transfer);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-10 animate-in slide-in-from-bottom-4">
@@ -74,10 +109,10 @@ export const TransferDetail: React.FC<{ id: string, onBack: () => void }> = ({ i
           </div>
         </div>
         <div className="flex gap-2">
-           {data.transfer.status === 'CREATED' && hasPermission('TRANSFER_DISPATCH') && (
+           {data.transfer.status === 'CREATED' && hasPermission('TRANSFER_DISPATCH', transferScope) && (
              <button onClick={async () => { await api.dispatchTransfer(id); notify('Carga em trânsito.', 'success'); load(); }} className="bg-blue-600 text-white px-6 py-2 rounded-xl font-black text-xs uppercase shadow-lg shadow-blue-200">Despachar Carga</button>
            )}
-           {data.transfer.status === 'IN_TRANSIT' && hasPermission('TRANSFER_RECEIVE') && (
+           {data.transfer.status === 'IN_TRANSIT' && hasPermission('TRANSFER_RECEIVE', transferScope) && (
              <button onClick={handleReceive} disabled={isProcessing} className="bg-emerald-600 text-white px-8 py-2 rounded-xl font-black text-xs uppercase shadow-lg shadow-emerald-200 flex items-center gap-2">
                {isProcessing ? <i className="fas fa-sync fa-spin"></i> : <i className="fas fa-check-double"></i>}
                Finalizar Conferência
