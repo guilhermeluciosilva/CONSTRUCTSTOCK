@@ -7,23 +7,23 @@ import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Onboarding } from './pages/Admin/Onboarding';
 
-// COMMON
+// COMPARTILHADOS (COMMON)
 import { Dashboard } from './pages/Common/Dashboard';
 import { StockList } from './pages/Common/StockList';
 import { MovementList } from './pages/Common/MovementList';
 import { DocumentCenter } from './pages/Common/DocumentCenter';
 import { ReportCenter } from './pages/Common/ReportCenter';
 
-// RESTAURANTE
+// RESTAURANTE (RESTAURANT)
 import { Tables } from './pages/Restaurant/Tables';
 import { Menu } from './pages/Restaurant/Menu';
 import { Recipes } from './pages/Restaurant/Recipes';
 
-// STORE
+// VAREJO (STORE)
 import { SalesList } from './pages/Store/SalesList';
 import { SalesEntry } from './pages/Store/SalesEntry';
 
-// OPERATIONAL (CONSTRUCTION / FACTORY)
+// OPERACIONAL (CONSTRUCTION / FACTORY)
 import { RMList } from './pages/Construction/RMList';
 import { RMNew } from './pages/Construction/RMNew';
 import { RMDetail } from './pages/Construction/RMDetail';
@@ -34,7 +34,7 @@ import { TransferList } from './pages/Construction/TransferList';
 import { TransferNew } from './pages/Construction/TransferNew';
 import { TransferDetail } from './pages/Construction/TransferDetail';
 
-// ADMIN
+// ADMINISTRAÇÃO
 import { UserManagement } from './pages/Admin/UserManagement';
 import { MaterialManagement } from './pages/Admin/MaterialManagement';
 import { OrgManagement } from './pages/Admin/OrgManagement';
@@ -50,6 +50,7 @@ const AppContent: React.FC = () => {
   const [currentPath, setCurrentPath] = useState('/dashboard');
   const [authView, setAuthView] = useState<AuthView>('landing');
   
+  // IDs Selecionados para Telas de Detalhe
   const [selectedRMId, setSelectedRMId] = useState<string | null>(null);
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null);
   const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
@@ -57,9 +58,6 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     if (!user) {
       setCurrentPath('/dashboard');
-      setSelectedRMId(null);
-      setSelectedTransferId(null);
-      setSelectedPOId(null);
       setAuthView('landing');
     }
   }, [user]);
@@ -80,39 +78,42 @@ const AppContent: React.FC = () => {
     switch (currentPath) {
       case '/dashboard': return <Dashboard onNavigate={handleNavigate} />;
       
-      // LOJA
+      // DOMÍNIO: LOJA / VAREJO
       case '/sales': return <SalesList onNew={() => setCurrentPath('/sales/new')} />;
       case '/sales/new': return <SalesEntry onFinished={() => setCurrentPath('/sales')} />;
       
-      // RESTAURANTE
+      // DOMÍNIO: RESTAURANTE
       case '/restaurant/tables': return <Tables />;
       case '/restaurant/menu': return <Menu />;
       case '/restaurant/recipes': return <Recipes />;
 
-      // OBRA / OPERACIONAL
+      // DOMÍNIO: OPERACIONAL (OBRA/FÁBRICA)
       case '/rm': return <RMList onDetail={(id) => { setSelectedRMId(id); setCurrentPath('/rm/detail'); }} onNew={() => setCurrentPath('/rm/new')} />;
       case '/rm/detail': return <RMDetail id={selectedRMId!} onBack={() => setCurrentPath('/rm')} onEdit={(id) => { setSelectedRMId(id); setCurrentPath('/rm/new'); }} />;
       case '/rm/new': return <RMNew editId={selectedRMId || undefined} onFinished={() => { setSelectedRMId(null); setCurrentPath('/rm'); }} />;
+      
       case '/transfers': return <TransferList onNew={() => setCurrentPath('/transfers/new')} onDetail={(id) => { setSelectedTransferId(id); setCurrentPath('/transfers/detail'); }} />;
       case '/transfers/new': return <TransferNew onFinished={() => setCurrentPath('/transfers')} />;
       case '/transfers/detail': return <TransferDetail id={selectedTransferId!} onBack={() => setCurrentPath('/transfers')} />;
+      
       case '/purchases': return <POList onNew={() => setCurrentPath('/purchases/new')} onDetail={(id) => { setSelectedPOId(id); setCurrentPath('/purchases/detail'); }} />;
       case '/purchases/new': return <PONew onFinished={() => setCurrentPath('/purchases')} />;
       case '/purchases/detail': return <PODetail id={selectedPOId!} onBack={() => setCurrentPath('/purchases')} />;
 
-      // COMPARTILHADO
+      // DOMÍNIO: COMPARTILHADO (ESTOQUE E RELATÓRIOS)
       case '/stock': return <StockList />;
       case '/movements': return <MovementList />;
       case '/documents': return <DocumentCenter />;
       case '/reports': return <ReportCenter />;
 
-      // ADMIN
+      // DOMÍNIO: ADMINISTRAÇÃO
       case '/admin/users': return <UserManagement />;
       case '/admin/materials': return <MaterialManagement />;
       case '/admin/org': return <OrgManagement />;
       case '/admin/suppliers': return <SupplierManagement />;
       case '/admin/settings': return <OperationSettings />;
       case '/admin/import': return <CSVImport />;
+      
       default: return <Dashboard onNavigate={handleNavigate} />;
     }
   };

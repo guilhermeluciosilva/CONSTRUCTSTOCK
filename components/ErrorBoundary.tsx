@@ -15,10 +15,10 @@ interface State {
 /**
  * ErrorBoundary component to catch rendering errors and display a fallback UI.
  */
-// Fix: Use explicit this.state and this.props from React.Component to ensure type safety in class inheritance.
-export class ErrorBoundary extends Component<Props, State> {
-  // Fix: Explicitly declare state type if property resolution fails on instance.
-  public override state: State;
+// Fix: Use explicit React.Component to ensure type safety and correct property resolution in class inheritance.
+export class ErrorBoundary extends React.Component<Props, State> {
+  // Fix: Explicitly declare state type and removed problematic override modifier.
+  public state: State;
 
   constructor(props: Props) {
     super(props);
@@ -35,14 +35,14 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   // Use componentDidCatch to log error information and update state
-  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Fix: Accessing setState correctly from the inherited Component base class.
+  // Fix: Removed problematic override modifier.
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     this.setState({ errorInfo });
     console.error("Uncaught error:", error, errorInfo);
   }
 
-  public override render() {
-    // Fix: Correctly accessing state from this instance.
+  // Fix: Removed problematic override modifier and correctly accessing base class properties.
+  public render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -69,7 +69,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Fix: Accessing props correctly from the inherited Component base class to resolve property resolution error.
     return this.props.children;
   }
 }

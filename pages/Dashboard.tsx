@@ -92,7 +92,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectRM, onNavigate }) 
   const isSoftLimit = usagePercentage >= 80;
   const isHardLimit = usagePercentage >= 100;
 
-  const PrivacyValue = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
+  // Fix: Added optional children to the type definition of PrivacyValue to resolve 'children property is missing' error.
+  const PrivacyValue = ({ children, className = "" }: { children?: React.ReactNode, className?: string }) => (
     <span className={`${className} transition-all duration-300 ${isPrivacyMode ? 'blur-md select-none opacity-50' : ''}`}>
       {children}
     </span>
