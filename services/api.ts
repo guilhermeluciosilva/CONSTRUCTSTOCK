@@ -36,24 +36,110 @@ interface DB {
 
 const INITIAL_DB: DB = {
   users: [
+    // RESTAURANTE
     { id: 'u1', name: 'Admin Restaurante', email: 'rest@example.com', password: '123', roleAssignments: [{ role: Role.OWNER, scope: { tenantId: 't1' } }] },
+    { id: 'u2', name: 'Gerente Restaurante', email: 'gerente.rest@example.com', password: '123', roleAssignments: [{ role: Role.CAIXA_VENDEDOR, scope: { tenantId: 't1' } }] },
+    // OBRA
+    { id: 'u3', name: 'Admin Obra', email: 'obra@example.com', password: '123', roleAssignments: [{ role: Role.OWNER, scope: { tenantId: 't2' } }] },
+    { id: 'u4', name: 'Coordenador Obra', email: 'coord.obra@example.com', password: '123', roleAssignments: [{ role: Role.COORDINATOR, scope: { tenantId: 't2', unitId: 'w2' } }] },
+    { id: 'u5', name: 'Almoxarife', email: 'almox@example.com', password: '123', roleAssignments: [{ role: Role.WH_CENTRAL, scope: { tenantId: 't2', unitId: 'w2' } }] },
+    // FÁBRICA
+    { id: 'u6', name: 'Admin Fábrica', email: 'fabrica@example.com', password: '123', roleAssignments: [{ role: Role.OWNER, scope: { tenantId: 't3' } }] },
+    { id: 'u7', name: 'Gerente Planta', email: 'gerente.planta@example.com', password: '123', roleAssignments: [{ role: Role.GERENTE_PLANTA, scope: { tenantId: 't3', unitId: 'w3' } }] },
+    { id: 'u8', name: 'Líder Setor', email: 'lider@example.com', password: '123', roleAssignments: [{ role: Role.LIDER_SETOR, scope: { tenantId: 't3', unitId: 'w3', sectorId: 's1' } }] },
+    // LOJA
+    { id: 'u9', name: 'Admin Loja', email: 'loja@example.com', password: '123', roleAssignments: [{ role: Role.OWNER, scope: { tenantId: 't4' } }] },
+    { id: 'u10', name: 'Gerente Loja', email: 'gerente.loja@example.com', password: '123', roleAssignments: [{ role: Role.GERENTE_LOJA, scope: { tenantId: 't4', unitId: 'w4' } }] },
   ],
   tenants: [
     { id: 't1', name: 'Restaurante Sabor Local', active: true, operationType: OperationType.RESTAURANT },
+    { id: 't2', name: 'Construtora ABC', active: true, operationType: OperationType.CONSTRUCTION },
+    { id: 't3', name: 'Fábrica XYZ', active: true, operationType: OperationType.FACTORY },
+    { id: 't4', name: 'Loja São Paulo', active: true, operationType: OperationType.STORE },
   ],
   works: [
+    // RESTAURANTE
     { id: 'w1', tenantId: 't1', name: 'Unidade Matriz', active: true, enabledModuleIds: ['res_tables', 'res_menu', 'res_recipes', 'stock', 'reports'], operationType: OperationType.RESTAURANT },
+    // OBRA
+    { id: 'w2', tenantId: 't2', name: 'Obra Centro', active: true, enabledModuleIds: ['rm', 'transfers', 'purchases', 'stock', 'reports'], operationType: OperationType.CONSTRUCTION },
+    // FÁBRICA
+    { id: 'w3', tenantId: 't3', name: 'Planta Campinas', active: true, enabledModuleIds: ['rm', 'transfers', 'purchases', 'stock', 'reports'], operationType: OperationType.FACTORY },
+    // LOJA
+    { id: 'w4', tenantId: 't4', name: 'Filial Centro', active: true, enabledModuleIds: ['sales', 'stock', 'reports'], operationType: OperationType.STORE },
   ],
-  sectors: [],
+  sectors: [
+    // FÁBRICA SETORES
+    { id: 's1', unitId: 'w3', name: 'Setor Usinagem', active: true },
+    { id: 's2', unitId: 'w3', name: 'Setor Montagem', active: true },
+  ],
   warehouses: [
+    // RESTAURANTE
     { id: 'wh1', workId: 'w1', unitId: 'w1', name: 'Cozinha Central', isCentral: true, active: true },
+    // OBRA
+    { id: 'wh2', workId: 'w2', unitId: 'w2', name: 'Almoxarifado Central', isCentral: true, active: true },
+    { id: 'wh3', workId: 'w2', unitId: 'w2', name: 'Estoque Canteiro', isCentral: false, active: true },
+    // FÁBRICA
+    { id: 'wh4', workId: 'w3', unitId: 'w3', name: 'Armazém Principal', isCentral: true, active: true },
+    { id: 'wh5', workId: 'w3', unitId: 'w3', name: 'Setor Usinagem', isCentral: false, sectorId: 's1', active: true },
+    { id: 'wh6', workId: 'w3', unitId: 'w3', name: 'Setor Montagem', isCentral: false, sectorId: 's2', active: true },
+    // LOJA
+    { id: 'wh7', workId: 'w4', unitId: 'w4', name: 'Estoque Loja', isCentral: true, active: true },
   ],
   materials: [
+    // ALIMENTAÇÃO (Restaurante + Loja)
     { id: 'm1', sku: 'ALIM-001', name: 'Arroz Branco', unit: 'KG', category: 'Cozinha', minStock: 20 },
     { id: 'm2', sku: 'BEB-001', name: 'Coca-Cola Lata', unit: 'UN', category: 'Bebida', minStock: 50, salePrice: 6.50 },
+    // CONSTRUÇÃO (Obra)
+    { id: 'm3', sku: 'CONST-001', name: 'Cimento Portland', unit: 'SC', category: 'Estrutura', minStock: 100 },
+    { id: 'm4', sku: 'CONST-002', name: 'Ferro Construção', unit: 'KG', category: 'Estrutura', minStock: 500 },
+    { id: 'm5', sku: 'CONST-003', name: 'Areia', unit: 'M³', category: 'Agregados', minStock: 50 },
+    // INDUSTRIAL (Fábrica)
+    { id: 'm6', sku: 'IND-001', name: 'Aço Carbono 1045', unit: 'KG', category: 'Matéria Prima', minStock: 1000 },
+    { id: 'm7', sku: 'IND-002', name: 'Óleo Hidráulico', unit: 'L', category: 'Fluidos', minStock: 100 },
+    { id: 'm8', sku: 'IND-003', name: 'Parafuso M12', unit: 'UN', category: 'Fixação', minStock: 5000 },
+    // VAREJO (Loja)
+    { id: 'm9', sku: 'VAR-001', name: 'Camiseta Básica', unit: 'UN', category: 'Vestuário', minStock: 100, salePrice: 49.90 },
+    { id: 'm10', sku: 'VAR-002', name: 'Calça Jeans', unit: 'UN', category: 'Vestuário', minStock: 50, salePrice: 129.90 },
   ],
-  suppliers: [], rms: [], rmItems: [], stocks: [{ warehouseId: 'wh1', materialId: 'm1', quantity: 50, reserved: 0 }, { warehouseId: 'wh1', materialId: 'm2', quantity: 100, reserved: 0 }], movements: [], pos: [], poItems: [], transfers: [], transferItems: [], sales: [], saleItems: [], documents: [], auditLogs: [],
-  recipes: [], menuItems: [], tables: [], tabs: []
+  suppliers: [
+    { id: 'sup1', tenantId: 't2', name: 'Fornecedor Construção ABC', taxId: '12345678000100', contactEmail: 'contato@const-abc.com', active: true },
+    { id: 'sup2', tenantId: 't3', name: 'Aços e Metais XYZ', taxId: '98765432000150', contactEmail: 'vendas@acos-xyz.com', active: true },
+  ],
+  rms: [],
+  rmItems: [],
+  stocks: [
+    // RESTAURANTE
+    { warehouseId: 'wh1', materialId: 'm1', quantity: 50, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'm2', quantity: 100, reserved: 0 },
+    // OBRA
+    { warehouseId: 'wh2', materialId: 'm3', quantity: 200, reserved: 0 },
+    { warehouseId: 'wh2', materialId: 'm4', quantity: 1000, reserved: 0 },
+    { warehouseId: 'wh2', materialId: 'm5', quantity: 100, reserved: 0 },
+    { warehouseId: 'wh3', materialId: 'm3', quantity: 50, reserved: 0 },
+    // FÁBRICA
+    { warehouseId: 'wh4', materialId: 'm6', quantity: 2000, reserved: 0 },
+    { warehouseId: 'wh4', materialId: 'm7', quantity: 500, reserved: 0 },
+    { warehouseId: 'wh4', materialId: 'm8', quantity: 10000, reserved: 0 },
+    { warehouseId: 'wh5', materialId: 'm6', quantity: 500, reserved: 0 },
+    { warehouseId: 'wh6', materialId: 'm8', quantity: 2000, reserved: 0 },
+    // LOJA
+    { warehouseId: 'wh7', materialId: 'm2', quantity: 200, reserved: 0 },
+    { warehouseId: 'wh7', materialId: 'm9', quantity: 150, reserved: 0 },
+    { warehouseId: 'wh7', materialId: 'm10', quantity: 75, reserved: 0 },
+  ],
+  movements: [],
+  pos: [],
+  poItems: [],
+  transfers: [],
+  transferItems: [],
+  sales: [],
+  saleItems: [],
+  documents: [],
+  auditLogs: [],
+  recipes: [],
+  menuItems: [],
+  tables: [],
+  tabs: []
 };
 
 class ApiService {
