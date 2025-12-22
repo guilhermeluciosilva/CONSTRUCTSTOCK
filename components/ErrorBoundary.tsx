@@ -13,8 +13,8 @@ interface State {
 /**
  * ErrorBoundary component to catch rendering errors and display a fallback UI.
  */
-// Fix: Use React.Component explicitly to ensure correct inheritance and resolve 'setState' and 'props' errors
-export class ErrorBoundary extends React.Component<Props, State> {
+// Fix: Extending Component directly from the react import to ensure setState and props are correctly inherited
+export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
@@ -28,7 +28,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
   // Use componentDidCatch to log error information and update state
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Explicitly update state to include error info for rendering
-    // Fix: Using React.Component ensures setState is available
+    // Fix: setState is correctly inherited when extending Component directly
     this.setState({ errorInfo });
     console.error("Uncaught error:", error, errorInfo);
   }
@@ -62,7 +62,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     }
 
     // Access children through this.props
-    // Fix: Using React.Component ensures props is available
+    // Fix: props is correctly inherited and available on the class instance
     return this.props.children;
   }
 }
