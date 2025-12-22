@@ -9,8 +9,8 @@ import { Onboarding } from './pages/Admin/Onboarding';
 
 // COMMON
 import { Dashboard } from './pages/Common/Dashboard';
-import { StockList } from './pages/Common/StockList';
-import { MovementList } from './pages/Common/MovementList';
+import { StockList } from './pages/Stock/StockList';
+import { MovementList } from './pages/Movements/MovementList';
 import { DocumentCenter } from './pages/Common/DocumentCenter';
 import { ReportCenter } from './pages/Common/ReportCenter';
 
@@ -20,8 +20,8 @@ import { Menu } from './pages/Restaurant/Menu';
 import { Recipes } from './pages/Restaurant/Recipes';
 
 // STORE
-import { SalesList } from './pages/Store/SalesList';
-import { SalesEntry } from './pages/Store/SalesEntry';
+import { SalesList } from './pages/Sales/SalesList';
+import { SalesEntry } from './pages/Sales/SalesEntry';
 
 // OPERATIONAL (CONSTRUCTION / FACTORY)
 import { RMList } from './pages/Construction/RMList';
