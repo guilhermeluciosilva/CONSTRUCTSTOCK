@@ -24,7 +24,7 @@ export const MaterialManagement: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!form.sku || !form.name) return notify('Preencha SKU e Nome', 'warning');
+    if (!form.sku || !form.name) return notify('Preencha Código e Nome', 'warning');
     
     try {
       if (editingId) {
@@ -64,7 +64,7 @@ export const MaterialManagement: React.FC = () => {
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-[10px] font-black uppercase text-slate-400">
             <tr>
-              <th className="px-8 py-5">SKU</th>
+              <th className="px-8 py-5">Código Produto</th>
               <th className="px-6 py-5">Nome</th>
               <th className="px-6 py-5">Categoria</th>
               <th className="px-6 py-5 text-center">Unidade</th>
@@ -117,7 +117,7 @@ export const MaterialManagement: React.FC = () => {
             <div className="p-8 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">SKU / Código</label>
+                   <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Código / Ref</label>
                    <input className="w-full p-3 bg-gray-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500" value={form.sku} onChange={e => setForm({...form, sku: e.target.value})} />
                 </div>
                 <div className="space-y-1">

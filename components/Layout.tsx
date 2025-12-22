@@ -25,11 +25,14 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
 
       if (['dashboard', 'settings'].includes(item.id)) return true;
 
+      // REGRA: Se a unidade tem módulos habilitados definidos, segue a lista rigorosamente.
       if (activeUnit?.enabledModuleIds && activeUnit.enabledModuleIds.length > 0) {
         return activeUnit.enabledModuleIds.includes(item.id);
       }
 
-      return true; 
+      // FALLBACK: Se não houver configuração explícita (unidade antiga/nova), oculta módulos "opcionais" (como documentos)
+      const optionalModules = ['documents'];
+      return !optionalModules.includes(item.id);
     });
   }, [hasPermission, currentScope, activeTenant, activeUnit]);
 
@@ -51,8 +54,8 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
   const isStore = effectiveOpType === OperationType.STORE;
   const isRestaurant = effectiveOpType === OperationType.RESTAURANT;
 
-  // Mostra seletor de almoxarifado apenas se for Operação de Logística Complexa (Obra/Fábrica)
-  const showWarehouseSelector = isFactory || isConstruction;
+  // Lógica: Em Loja/Restaurante, só mostra o seletor de estoque se houver MAIS DE UM (ex: Estoque Central + Prateleira Exposição)
+  const showWarehouseSelector = isFactory || isConstruction || ( (isStore || isRestaurant) && filteredWhs.length > 1 );
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
@@ -127,77 +130,91 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
                 <span className="font-black text-slate-700 whitespace-nowrap">{activeTenant?.name || 'Empresa'}</span>
               </div>
 
-              {/* Seletor de Unidade */}
+              {/* Seletor de Unidade - TOTALMENTE CLICÁVEL */}
               <div className="flex items-center md:border-l md:border-slate-100 md:pl-4 shrink-0">
-                <div className="relative group">
-                  <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer shadow-sm active:scale-95">
+                <div className="relative group overflow-hidden rounded-xl">
+                  <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 bg-slate-50 border border-slate-200 group-hover:border-blue-400 group-hover:bg-blue-50 transition-all shadow-sm">
                     <i className={`fas ${isStore ? 'fa-store' : isRestaurant ? 'fa-utensils' : isFactory ? 'fa-industry' : 'fa-hard-hat'} ${currentScope?.unitId ? 'text-blue-600' : 'text-slate-400'} text-xs md:text-base`}></i>
                     <div className="flex flex-col min-w-[100px] md:min-w-[140px]">
                       <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
                         {getLabel('UNIT')} <span className="hidden xs:inline">Selecionada</span>
                       </span>
                       <div className="relative flex items-center">
-                        <select 
-                          className="bg-transparent border-none p-0 font-black text-slate-800 focus:ring-0 cursor-pointer appearance-none pr-5 text-[11px] md:text-xs w-full"
-                          value={currentScope?.unitId || currentScope?.workId || ''}
-                          onChange={(e) => setScope({ ...currentScope!, unitId: e.target.value, workId: e.target.value, sectorId: undefined, warehouseId: undefined })}
-                        >
-                          <option value="">Todas</option>
-                          {filteredUnits.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                        </select>
+                        <span className="font-black text-slate-800 text-[11px] md:text-xs truncate pr-4">
+                          {filteredUnits.find(u => u.id === (currentScope?.unitId || currentScope?.workId))?.name || 'Todas'}
+                        </span>
                         <i className="fas fa-chevron-down absolute right-0 text-[10px] text-slate-400 pointer-events-none group-hover:text-blue-500 transition-colors"></i>
                       </div>
                     </div>
                   </div>
+                  {/* Select invisível cobrindo tudo */}
+                  <select 
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                    value={currentScope?.unitId || currentScope?.workId || ''}
+                    onChange={(e) => setScope({ ...currentScope!, unitId: e.target.value, workId: e.target.value, sectorId: undefined, warehouseId: undefined })}
+                  >
+                    <option value="">Todas</option>
+                    {filteredUnits.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                  </select>
                 </div>
               </div>
 
               {isFactory && currentScope?.unitId && (
                 <div className="flex items-center border-l border-slate-100 pl-2 md:pl-4 shrink-0">
-                  <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer shadow-sm active:scale-95">
-                    <i className="fas fa-layer-group text-slate-400 group-hover:text-purple-500 transition-colors text-xs md:text-base"></i>
-                    <div className="flex flex-col min-w-[80px] md:min-w-[120px]">
-                      <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
-                        {getLabel('SECTOR')}
-                      </span>
-                      <div className="relative flex items-center">
-                        <select 
-                          className="bg-transparent border-none p-0 font-black text-slate-700 focus:ring-0 cursor-pointer appearance-none pr-5 text-[11px] md:text-xs w-full"
-                          value={currentScope?.sectorId || ''}
-                          onChange={(e) => setScope({ ...currentScope!, sectorId: e.target.value, warehouseId: undefined })}
-                        >
-                          <option value="">Todos</option>
-                          {sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
-                        <i className="fas fa-chevron-down absolute right-0 text-[10px] text-slate-400 pointer-events-none"></i>
+                  <div className="relative group overflow-hidden rounded-xl">
+                    <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 bg-slate-50 border border-slate-200 group-hover:border-purple-400 group-hover:bg-purple-50 transition-all shadow-sm">
+                      <i className="fas fa-layer-group text-slate-400 group-hover:text-purple-500 transition-colors text-xs md:text-base"></i>
+                      <div className="flex flex-col min-w-[80px] md:min-w-[120px]">
+                        <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
+                          {getLabel('SECTOR')}
+                        </span>
+                        <div className="relative flex items-center">
+                          <span className="font-black text-slate-700 text-[11px] md:text-xs truncate pr-4">
+                            {sectors.find(s => s.id === currentScope?.sectorId)?.name || 'Todos'}
+                          </span>
+                          <i className="fas fa-chevron-down absolute right-0 text-[10px] text-slate-400 pointer-events-none"></i>
+                        </div>
                       </div>
                     </div>
+                    <select 
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                      value={currentScope?.sectorId || ''}
+                      onChange={(e) => setScope({ ...currentScope!, sectorId: e.target.value, warehouseId: undefined })}
+                    >
+                      <option value="">Todos</option>
+                      {sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    </select>
                   </div>
                 </div>
               )}
 
               {showWarehouseSelector && (currentScope?.unitId || currentScope?.workId) && (
                 <div className="flex items-center border-l border-slate-100 pl-2 md:pl-4 shrink-0">
-                  <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all cursor-pointer shadow-sm active:scale-95">
-                    <i className="fas fa-warehouse text-slate-400 group-hover:text-emerald-500 transition-colors text-xs md:text-base"></i>
-                    <div className="flex flex-col min-w-[80px] md:min-w-[120px]">
-                      <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
-                        Estoque
-                      </span>
-                      <div className="relative flex items-center">
-                        <select 
-                          className="bg-transparent border-none p-0 font-black text-slate-700 focus:ring-0 cursor-pointer appearance-none pr-5 text-[11px] md:text-xs w-full"
-                          value={currentScope?.warehouseId || ''}
-                          onChange={(e) => setScope({ ...currentScope!, warehouseId: e.target.value })}
-                        >
-                          <option value="">Geral</option>
-                          {filteredWhs.filter(wh => !currentScope.sectorId || wh.sectorId === currentScope.sectorId).map(wh => (
-                            <option key={wh.id} value={wh.id}>{wh.name}</option>
-                          ))}
-                        </select>
-                        <i className="fas fa-chevron-down absolute right-0 text-[10px] text-slate-400 pointer-events-none"></i>
+                  <div className="relative group overflow-hidden rounded-xl">
+                    <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 bg-slate-50 border border-slate-200 group-hover:border-emerald-400 group-hover:bg-emerald-50 transition-all shadow-sm">
+                      <i className="fas fa-warehouse text-slate-400 group-hover:text-emerald-500 transition-colors text-xs md:text-base"></i>
+                      <div className="flex flex-col min-w-[80px] md:min-w-[120px]">
+                        <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
+                          Estoque
+                        </span>
+                        <div className="relative flex items-center">
+                          <span className="font-black text-slate-700 text-[11px] md:text-xs truncate pr-4">
+                            {filteredWhs.find(wh => wh.id === currentScope?.warehouseId)?.name || 'Geral'}
+                          </span>
+                          <i className="fas fa-chevron-down absolute right-0 text-[10px] text-slate-400 pointer-events-none"></i>
+                        </div>
                       </div>
                     </div>
+                    <select 
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                      value={currentScope?.warehouseId || ''}
+                      onChange={(e) => setScope({ ...currentScope!, warehouseId: e.target.value })}
+                    >
+                      <option value="">Geral</option>
+                      {filteredWhs.filter(wh => !currentScope.sectorId || wh.sectorId === currentScope.sectorId).map(wh => (
+                        <option key={wh.id} value={wh.id}>{wh.name}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}

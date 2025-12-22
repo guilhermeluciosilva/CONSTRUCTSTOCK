@@ -81,7 +81,7 @@ export const RMNew: React.FC<{ onFinished: () => void, editId?: string }> = ({ o
         </div>
 
         <div className="p-8 bg-slate-900 flex justify-between items-center text-white">
-           <div className="text-xs font-black uppercase tracking-widest">{items.length} skus listados</div>
+           <div className="text-xs font-black uppercase tracking-widest">{items.length} produtos listados</div>
            <button onClick={handleSubmit} disabled={isSubmitting} className="bg-blue-600 text-white px-10 py-3 rounded-xl font-black uppercase text-xs shadow-lg shadow-blue-500/30 active:scale-95 transition-all">
               {isSubmitting ? <i className="fas fa-sync fa-spin"></i> : <i className="fas fa-check-circle mr-2"></i>}
               {editId ? 'Salvar Alterações' : 'Enviar p/ Aprovação'}

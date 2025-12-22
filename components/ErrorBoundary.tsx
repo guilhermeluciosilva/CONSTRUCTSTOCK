@@ -1,5 +1,5 @@
 
-import React, { ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   // Children must be optional to satisfy the ReactNode type in some contexts
@@ -15,17 +15,19 @@ interface State {
 /**
  * ErrorBoundary component to catch rendering errors and display a fallback UI.
  */
-// Explicitly use React.Component to ensure properties like setState and props are correctly resolved by TypeScript
-export class ErrorBoundary extends React.Component<Props, State> {
-  // Initialize state with explicit types, inheriting properly from Component
-  public state: State = {
-    hasError: false,
-    error: null,
-    errorInfo: null
-  };
+// Fix: Use explicit this.state and this.props from React.Component to ensure type safety in class inheritance.
+export class ErrorBoundary extends Component<Props, State> {
+  // Fix: Explicitly declare state type if property resolution fails on instance.
+  public override state: State;
 
   constructor(props: Props) {
     super(props);
+    // Fix: Explicitly initializing state in constructor to ensure it's correctly recognized by the type checker as part of the instance.
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null
+    };
   }
 
   public static getDerivedStateFromError(error: Error): State {
@@ -33,14 +35,14 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   // Use componentDidCatch to log error information and update state
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Update state to include error information for debugging
-    // This method exists on the base React.Component class
+  public override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Fix: Accessing setState correctly from the inherited Component base class.
     this.setState({ errorInfo });
     console.error("Uncaught error:", error, errorInfo);
   }
 
-  public render() {
+  public override render() {
+    // Fix: Correctly accessing state from this instance.
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -67,7 +69,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
-    // Accessing children from this.props which is properly inherited from React.Component
+    // Fix: Accessing props correctly from the inherited Component base class to resolve property resolution error.
     return this.props.children;
   }
 }

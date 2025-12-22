@@ -75,16 +75,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const currentUnit = u.find(x => x.id === unitId);
       const effectiveOpType = currentUnit?.operationType || activeTenant?.operationType;
 
-      // REGRA: Lojas e Restaurantes selecionam automaticamente o estoque central
-      if (effectiveOpType === OperationType.STORE || effectiveOpType === OperationType.RESTAURANT) {
-        const centralWh = wh.find(w => w.isCentral) || wh[0];
-        if (centralWh && currentScope.warehouseId !== centralWh.id) {
-          setScopeNormalized({ ...currentScope, warehouseId: centralWh.id });
-        }
-      } else {
-        // Para Obras/Fábricas, se houver apenas um, seleciona
-        if (wh.length === 1 && !currentScope.warehouseId) {
-          setScopeNormalized({ ...currentScope, warehouseId: wh[0].id });
+      // REGRA: Auto-seleção de almoxarifado para Restaurantes e Lojas com apenas 1 estoque
+      if (wh.length > 0) {
+        const hasValidWh = wh.some(w => w.id === currentScope.warehouseId);
+        if (!hasValidWh) {
+          // Se for restaurante e tiver estoques, pega o central ou o primeiro disponível
+          const autoWh = wh.find(w => w.isCentral) || wh[0];
+          setScopeNormalized({ ...currentScope, warehouseId: autoWh.id });
+          return; 
         }
       }
       
