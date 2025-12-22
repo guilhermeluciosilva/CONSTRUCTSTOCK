@@ -26,6 +26,7 @@ import { TransferDetail } from './pages/Transfers/TransferDetail';
 import { ReportCenter } from './pages/Reports/ReportCenter';
 import { SalesList } from './pages/Sales/SalesList';
 import { SalesEntry } from './pages/Sales/SalesEntry';
+import { TableManagement } from './pages/Restaurant/TableManagement';
 import { OperationSettings } from './pages/Admin/OperationSettings';
 import { CSVImport } from './pages/Admin/CSVImport';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -58,8 +59,8 @@ const AppContent: React.FC = () => {
   if (loading) return <div className="flex items-center justify-center h-screen"><i className="fas fa-sync fa-spin text-3xl text-blue-600"></i></div>;
   
   if (!user) {
-    if (authView === 'onboarding') return <Onboarding onBack={() => setAuthView('landing')} />;
-    if (authView === 'login') return <Login onOnboard={() => setAuthView('onboarding')} />;
+    if (authView === 'onboarding') return <Onboarding onBack={() => setAuthView('login')} />;
+    if (authView === 'login') return <Login onBack={() => setAuthView('landing')} onOnboard={() => setAuthView('onboarding')} />;
     return <Landing onLogin={() => setAuthView('login')} onOnboard={() => setAuthView('onboarding')} />;
   }
 
@@ -74,6 +75,7 @@ const AppContent: React.FC = () => {
       case '/dashboard': return <Dashboard onNavigate={handleNavigate} onSelectRM={(id) => { setSelectedRMId(id); setCurrentPath('/rm/detail'); }} />;
       case '/sales': return <SalesList onNew={() => setCurrentPath('/sales/new')} />;
       case '/sales/new': return <SalesEntry onFinished={() => setCurrentPath('/sales')} />;
+      case '/tables': return <TableManagement />;
       case '/rm': return <RMList onDetail={(id) => { setSelectedRMId(id); setCurrentPath('/rm/detail'); }} onNew={() => setCurrentPath('/rm/new')} />;
       case '/rm/detail': return <RMDetail id={selectedRMId!} onBack={() => setCurrentPath('/rm')} onEdit={(id) => { setSelectedRMId(id); setCurrentPath('/rm/new'); }} />;
       case '/rm/new': return <RMNew editId={selectedRMId || undefined} onFinished={() => { setSelectedRMId(null); setCurrentPath('/rm'); }} />;

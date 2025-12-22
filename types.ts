@@ -20,7 +20,9 @@ export enum Role {
 export enum OperationType {
   STORE = 'STORE',    // LOJA
   CONSTRUCTION = 'CONSTRUCTION', // OBRAS
-  FACTORY = 'FACTORY' // FÁBRICA
+  FACTORY = 'FACTORY', // FÁBRICA
+  RESTAURANT = 'RESTAURANT', // NOVO: RESTAURANTE
+  OTHER = 'OTHER' // NOVO: OUTROS
 }
 
 export type Permission = 
@@ -34,7 +36,7 @@ export type Permission =
   | 'USER_MANAGE' | 'ORG_MANAGE' | 'MATERIAL_CATALOG_MANAGE' | 'SUPPLIER_MANAGE'
   | 'IMPORT_CSV'
   | 'SALE_VIEW' | 'SALE_CREATE' | 'SALE_CANCEL' | 'SALE_REPORT'
-  | 'SETTINGS_MANAGE';
+  | 'TABLE_MANAGE' | 'SETTINGS_MANAGE';
 
 export interface Scope {
   tenantId: string;
@@ -74,6 +76,7 @@ export interface Unit {
   name: string;
   active: boolean;
   enabledModuleIds?: string[];
+  operationType?: OperationType; // Tipo específico da unidade
 }
 
 export interface Sector {

@@ -45,8 +45,14 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
   const filteredUnits = units.filter(u => isPermittedUnit(u.id));
   const filteredWhs = warehouses.filter(wh => isPermittedWh(wh.id));
 
-  const isFactory = activeTenant?.operationType === OperationType.FACTORY;
-  const isStore = activeTenant?.operationType === OperationType.STORE;
+  const effectiveOpType = activeUnit?.operationType || activeTenant?.operationType;
+  const isFactory = effectiveOpType === OperationType.FACTORY;
+  const isConstruction = effectiveOpType === OperationType.CONSTRUCTION;
+  const isStore = effectiveOpType === OperationType.STORE;
+  const isRestaurant = effectiveOpType === OperationType.RESTAURANT;
+
+  // Mostra seletor de almoxarifado apenas se for Operação de Logística Complexa (Obra/Fábrica)
+  const showWarehouseSelector = isFactory || isConstruction;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
@@ -125,7 +131,7 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
               <div className="flex items-center md:border-l md:border-slate-100 md:pl-4 shrink-0">
                 <div className="relative group">
                   <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer shadow-sm active:scale-95">
-                    <i className={`fas ${isStore ? 'fa-store' : isFactory ? 'fa-industry' : 'fa-hard-hat'} ${currentScope?.unitId ? 'text-blue-600' : 'text-slate-400'} text-xs md:text-base`}></i>
+                    <i className={`fas ${isStore ? 'fa-store' : isRestaurant ? 'fa-utensils' : isFactory ? 'fa-industry' : 'fa-hard-hat'} ${currentScope?.unitId ? 'text-blue-600' : 'text-slate-400'} text-xs md:text-base`}></i>
                     <div className="flex flex-col min-w-[100px] md:min-w-[140px]">
                       <span className="text-[8px] md:text-[9px] font-black text-slate-400 uppercase leading-none mb-0.5 tracking-wider">
                         {getLabel('UNIT')} <span className="hidden xs:inline">Selecionada</span>
@@ -170,7 +176,7 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
                 </div>
               )}
 
-              {(currentScope?.unitId || currentScope?.workId) && (
+              {showWarehouseSelector && (currentScope?.unitId || currentScope?.workId) && (
                 <div className="flex items-center border-l border-slate-100 pl-2 md:pl-4 shrink-0">
                   <div className="flex items-center gap-2 md:gap-3 px-3 md:px-4 py-1.5 md:py-2 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all cursor-pointer shadow-sm active:scale-95">
                     <i className="fas fa-warehouse text-slate-400 group-hover:text-emerald-500 transition-colors text-xs md:text-base"></i>

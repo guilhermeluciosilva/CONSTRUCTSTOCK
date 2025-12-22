@@ -50,19 +50,16 @@ const AdvancedProductionLine = () => {
           key={index}
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
         >
-          {/* Background Image for each slide */}
           <div className="absolute inset-0">
             <img 
               src={slide.image} 
               alt={slide.title} 
               className="w-full h-full object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-[3000ms]"
             />
-            {/* Overlay gradiente para combinar com a identidade visual */}
             <div className="absolute inset-0 bg-gradient-to-t from-[#05070e] via-transparent to-transparent opacity-90"></div>
             <div className="absolute inset-0 bg-blue-600/10 mix-blend-overlay"></div>
           </div>
 
-          {/* Elements Overlay for each slide */}
           <div className="relative z-20 w-full h-full p-8 flex flex-col justify-end">
              <div className={`flex items-center gap-4 transition-all duration-700 delay-300 ${index === currentSlide ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
                 <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-blue-500/40">
@@ -77,7 +74,6 @@ const AdvancedProductionLine = () => {
         </div>
       ))}
 
-      {/* Progress Indicators */}
       <div className="absolute top-6 right-8 z-30 flex gap-1.5">
         {slides.map((_, i) => (
           <div 
@@ -99,6 +95,14 @@ export const Landing: React.FC<LandingProps> = ({ onLogin, onOnboard }) => {
     setIsMenuOpen(false);
   };
 
+  const plans = [
+    { name: 'FREE', price: '0', ads: 'Sim', ops: '1', units: '1', users: '1', skus: '300', movs: '600', storage: '150 MB', reports: 'Básicos + 7 dias', popular: false },
+    { name: 'STARTER', price: '59', ads: 'Não', ops: '1', units: '2', users: '3', skus: '2.000', movs: '6.000', storage: '2 GB', reports: 'Export CSV + 90 dias', popular: false },
+    { name: 'GROWTH', price: '149', ads: 'Não', ops: '2', units: '5', users: '8', skus: '10.000', movs: '30.000', storage: '15 GB', reports: 'Dashboards + 24 meses', popular: true },
+    { name: 'PRO', price: '299', ads: 'Não', ops: '5', units: '15', users: '20', skus: 'Ilimitado', movs: '120.000', storage: '60 GB', reports: 'Avançados + Ilimitado', popular: false },
+    { name: 'ENTERPRISE', price: 'Sob Consulta', ads: 'Não', ops: 'Ilimitado', units: 'Ilimitado', users: 'Ilimitado / SSO', skus: 'Ilimitado', movs: 'Custom', storage: '200 GB+', reports: 'BI / Custom', popular: false },
+  ];
+
   return (
     <div className="min-h-screen bg-white text-slate-900 selection:bg-blue-100">
       {/* Navigation */}
@@ -113,6 +117,7 @@ export const Landing: React.FC<LandingProps> = ({ onLogin, onOnboard }) => {
 
           <div className="hidden md:flex items-center gap-8">
             <button onClick={() => scrollTo('sobre')} className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition-colors">Sobre</button>
+            <button onClick={() => scrollTo('planos')} className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition-colors">Planos</button>
             <button onClick={() => scrollTo('ideal')} className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-blue-600 transition-colors">Ideal</button>
             <div className="h-6 w-px bg-slate-100"></div>
             <button onClick={onLogin} className="text-xs font-black uppercase tracking-widest text-slate-800 hover:text-blue-600 transition-colors">Login</button>
@@ -127,6 +132,7 @@ export const Landing: React.FC<LandingProps> = ({ onLogin, onOnboard }) => {
         {isMenuOpen && (
           <div className="md:hidden bg-white border-b border-slate-100 p-6 space-y-4 animate-in slide-in-from-top-4">
             <button onClick={() => scrollTo('sobre')} className="block w-full text-left font-black text-xs uppercase text-slate-500 py-2">Sobre</button>
+            <button onClick={() => scrollTo('planos')} className="block w-full text-left font-black text-xs uppercase text-slate-500 py-2">Planos</button>
             <button onClick={() => scrollTo('ideal')} className="block w-full text-left font-black text-xs uppercase text-slate-500 py-2">Ideal</button>
             <hr className="border-slate-50" />
             <button onClick={onLogin} className="block w-full text-left font-black text-xs uppercase text-slate-800 py-2">Login</button>
@@ -163,121 +169,178 @@ export const Landing: React.FC<LandingProps> = ({ onLogin, onOnboard }) => {
                 <AdvancedProductionLine />
               </div>
             </div>
-            <div className="absolute -top-12 -right-12 w-64 h-64 bg-blue-600/10 rounded-full blur-[80px]"></div>
-            <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-indigo-600/10 rounded-full blur-[80px]"></div>
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="py-24 bg-slate-50 px-6">
+      {/* Sobre Section - RESTORED & IMPROVED */}
+      <section id="sobre" className="py-24 bg-white px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+            <h2 className="text-xs font-black uppercase text-blue-600 tracking-[0.3em]">Tecnologia e Gestão</h2>
+            <p className="text-3xl font-black text-slate-900 uppercase">O que nos torna diferentes?</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+               <div className="w-14 h-14 bg-blue-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-500/20 mb-6">
+                  <i className="fas fa-microchip"></i>
+               </div>
+               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Gestão Autônoma</h3>
+               <p className="text-slate-500 text-sm font-medium leading-relaxed">
+                 Nossa IA monitora níveis de estoque e sugere reposições automáticas antes que o material acabe no canteiro ou na gôndola.
+               </p>
+            </div>
+            <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+               <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-500/20 mb-6">
+                  <i className="fas fa-cloud-arrow-up"></i>
+               </div>
+               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Cloud Docs</h3>
+               <p className="text-slate-500 text-sm font-medium leading-relaxed">
+                 Elimine o papel. Armazene Notas Fiscais, Certificados de Qualidade e Contratos vinculados diretamente a cada transação.
+               </p>
+            </div>
+            <div className="space-y-4 p-8 rounded-3xl bg-slate-50 border border-slate-100 group hover:bg-white hover:shadow-2xl hover:-translate-y-2 transition-all duration-500">
+               <div className="w-14 h-14 bg-emerald-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-500/20 mb-6">
+                  <i className="fas fa-chart-line"></i>
+               </div>
+               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Escalabilidade</h3>
+               <p className="text-slate-500 text-sm font-medium leading-relaxed">
+                 De uma única loja a grandes holdings. Nosso sistema de multi-tenant permite gerenciar centenas de unidades com um único login.
+               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="planos" className="py-24 bg-slate-50 px-6 border-y border-slate-100">
         <div className="max-w-7xl mx-auto space-y-16">
           <div className="text-center max-w-2xl mx-auto space-y-4">
-            <h2 className="text-xs font-black uppercase text-blue-600 tracking-[0.3em]">Operação</h2>
-            <p className="text-3xl font-black text-slate-900">Como o ConstructStock ajuda seu dia a dia</p>
+            <h2 className="text-xs font-black uppercase text-blue-600 tracking-[0.3em]">Investimento</h2>
+            <p className="text-3xl font-black text-slate-900 uppercase">Planos que acompanham seu crescimento</p>
+            <p className="text-slate-500 font-medium italic text-sm">Comece com uma operação, expanda conforme sua necessidade.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { icon: 'fa-exchange-alt', title: 'Entradas e saídas fluidas', desc: 'Registre movimentações em segundos com interface intuitiva otimizada para Desktop e Mobile.' },
-              { icon: 'fa-sitemap', title: 'Controle Multi-unidade', desc: 'Gerencie múltiplos estoques dentro de uma mesma unidade ou em locais geograficamente distintos.' },
-              { icon: 'fa-fingerprint', title: 'Rastreabilidade Total', desc: 'Saiba quem, quando e por que cada item foi movimentado com logs de auditoria automáticos.' }
-            ].map((card, i) => (
-              <div key={i} className="bg-white p-10 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
-                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                  <i className={`fas ${card.icon}`}></i>
-                </div>
-                <h3 className="text-lg font-black text-slate-900 mb-4">{card.title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">{card.desc}</p>
-              </div>
-            ))}
+          <div className="overflow-x-auto pb-6">
+            <table className="w-full min-w-[1000px] border-collapse bg-white rounded-[32px] overflow-hidden shadow-2xl border border-slate-200">
+              <thead>
+                <tr className="bg-slate-900 text-white">
+                  <th className="p-8 text-left text-xs font-black uppercase tracking-widest w-1/4">Recursos</th>
+                  {plans.map(p => (
+                    <th key={p.name} className={`p-8 text-center border-l border-slate-800 ${p.popular ? 'bg-blue-600' : ''}`}>
+                      <p className="text-[10px] font-black opacity-70 mb-1">{p.name === 'FREE' ? 'Experimental' : 'Assinatura'}</p>
+                      <p className="text-xl font-black mb-2">{p.name}</p>
+                      <p className="text-2xl font-black">
+                        {p.price !== 'Sob Consulta' ? `R$ ${p.price}` : p.price}
+                        {p.price !== 'Sob Consulta' && <span className="text-[10px] opacity-60 ml-1">/mês</span>}
+                      </p>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm font-bold text-slate-700">
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-6 pl-8">Anúncios no Sistema</td>
+                  {plans.map(p => <td key={p.name} className={`p-6 text-center border-l border-slate-100 ${p.ads === 'Sim' ? 'text-blue-600' : 'text-slate-400 font-normal'}`}>{p.ads}</td>)}
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors bg-slate-50/30">
+                  <td className="p-6 pl-8">Operações Ativas <i className="fas fa-info-circle text-[10px] ml-1 text-slate-400" title="Loja, Restaurante, Obras ou Fábrica"></i></td>
+                  {plans.map(p => <td key={p.name} className="p-6 text-center border-l border-slate-100 text-slate-900">{p.ops}</td>)}
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-6 pl-8">Unidades / Locais</td>
+                  {plans.map(p => <td key={p.name} className="p-6 text-center border-l border-slate-100 text-slate-900">{p.units}</td>)}
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors bg-slate-50/30">
+                  <td className="p-6 pl-8">Usuários Incluídos</td>
+                  {plans.map(p => <td key={p.name} className="p-6 text-center border-l border-slate-100 text-slate-900">{p.users}</td>)}
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-6 pl-8">Limite de SKUs</td>
+                  {plans.map(p => <td key={p.name} className="p-6 text-center border-l border-slate-100 text-slate-900">{p.skus}</td>)}
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors bg-slate-50/30">
+                  <td className="p-6 pl-8">Movimentações / Mês</td>
+                  {plans.map(p => <td key={p.name} className="p-6 text-center border-l border-slate-100 text-slate-900">{p.movs}</td>)}
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors">
+                  <td className="p-6 pl-8">Armazenamento</td>
+                  {plans.map(p => <td key={p.name} className="p-6 text-center border-l border-slate-100 text-slate-900">{p.storage}</td>)}
+                </tr>
+                <tr className="hover:bg-slate-50 transition-colors bg-slate-50/30">
+                  <td className="p-6 pl-8">Relatórios</td>
+                  {plans.map(p => <td key={p.name} className="p-6 text-center border-l border-slate-100 text-[10px] uppercase">{p.reports}</td>)}
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-      </section>
 
-      {/* Targets Section */}
-      <section className="py-24 px-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto space-y-16">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-4">
-              <h2 className="text-xs font-black uppercase text-blue-600 tracking-[0.3em]">Verticalização</h2>
-              <p className="text-4xl font-black text-slate-900 leading-tight">Um sistema, três realidades.</p>
-            </div>
-            <p className="text-slate-500 font-medium max-w-md">
-              Ajustamos os termos e fluxos para que o sistema fale a língua da sua operação, seja você um lojista ou engenheiro.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="p-8 rounded-[32px] bg-slate-900 text-white space-y-6 relative overflow-hidden group">
-              <i className="fas fa-store text-4xl text-blue-500 opacity-20 absolute -right-4 -top-4 group-hover:scale-110 transition-transform"></i>
-              <h4 className="text-xl font-black">Lojas</h4>
-              <p className="text-slate-400 text-sm">Venda/saída rápida e estoque simples. Otimizado para balcão e conferência de prateleira.</p>
-              <div className="pt-4 flex items-center gap-2 text-[10px] font-black uppercase text-blue-400"><i className="fas fa-check"></i> Venda direta</div>
-            </div>
-            <div className="p-8 rounded-[32px] bg-blue-600 text-white space-y-6 relative overflow-hidden group shadow-2xl shadow-blue-500/20">
-              <i className="fas fa-hard-hat text-4xl text-white opacity-20 absolute -right-4 -top-4 group-hover:scale-110 transition-transform"></i>
-              <h4 className="text-xl font-black">Obras</h4>
-              <p className="text-blue-100 text-sm">Central abastecendo obras, transferências e requisições (RM). Controle total de suprimentos.</p>
-              <div className="pt-4 flex items-center gap-2 text-[10px] font-black uppercase text-white"><i className="fas fa-check"></i> Requisições RM</div>
-            </div>
-            <div className="p-8 rounded-[32px] bg-slate-900 text-white space-y-6 relative overflow-hidden group">
-              <i className="fas fa-industry text-4xl text-emerald-500 opacity-20 absolute -right-4 -top-4 group-hover:scale-110 transition-transform"></i>
-              <h4 className="text-xl font-black">Indústrias</h4>
-              <p className="text-slate-400 text-sm">Setores, múltiplos almoxarifados e movimentações internas complexas entre processos.</p>
-              <div className="pt-4 flex items-center gap-2 text-[10px] font-black uppercase text-emerald-400"><i className="fas fa-check"></i> Setores de produção</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="sobre" className="py-24 bg-slate-50 px-6 border-y border-slate-100">
-        <div className="max-w-4xl mx-auto text-center space-y-10">
-          <div className="w-20 h-2 bg-blue-600 mx-auto rounded-full mb-10"></div>
-          <h2 className="text-3xl font-black text-slate-900">Sobre o ConstructStock Pro</h2>
-          <div className="space-y-6 text-slate-500 text-lg leading-relaxed font-medium">
-            <p>
-              Nossa missão é simples: simplificar o controle de materiais para que as empresas possam focar no que realmente importa. Acreditamos que um sistema robusto não precisa ser complicado de usar.
-            </p>
-            <p>
-              Com foco em adoção diária e baixa fricção, criamos uma plataforma que oferece clareza absoluta sobre o que entra e o que sai, eliminando rupturas de estoque e desperdícios financeiros.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Ideal & Objectives */}
-      <section id="ideal" className="py-24 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-16 items-center">
-          <div className="flex-1">
-            <div className="bg-slate-900 rounded-[40px] p-12 text-white space-y-8">
-               <h3 className="text-2xl font-black">Nosso Ideal e Objetivo</h3>
-               <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-8">
+            <div className="bg-white p-10 rounded-[32px] border border-slate-200 shadow-xl space-y-6">
+               <h4 className="text-xl font-black text-slate-900 flex items-center gap-3">
+                 <i className="fas fa-puzzle-piece text-blue-600"></i> Add-ons Opcionais
+               </h4>
+               <p className="text-sm text-slate-500 font-medium">Aumente sua capacidade sem precisar trocar de plano obrigatoriamente.</p>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {[
-                    { t: 'Simplicidade que funciona', d: 'Menos cliques, mais produtividade. Design focado no operador.' },
-                    { t: 'Controle com rastreabilidade', d: 'Auditoria nativa em cada grama ou unidade movimentada.' },
-                    { t: 'Versatilidade Total', d: 'Pronto para loja, obra e fábrica em um único ambiente.' },
-                    { t: 'Escalabilidade Real', d: 'Sua empresa cresce, o sistema acompanha sem perder fôlego.' }
-                  ].map((item, i) => (
-                    <div key={i} className="flex gap-4">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center shrink-0 text-xs font-black">{i+1}</div>
-                      <div>
-                        <p className="font-black text-sm uppercase text-blue-400 tracking-widest">{item.t}</p>
-                        <p className="text-slate-400 text-xs mt-1">{item.d}</p>
-                      </div>
+                    { l: 'PDV / Caixa Extra', p: 'R$ 39/mês' },
+                    { l: 'Usuário Extra', p: 'R$ 12/mês' },
+                    { l: 'Unidade/Loja Extra', p: 'R$ 29/mês' },
+                    { l: '10 GB Armazenamento', p: 'R$ 39/mês' },
+                    { l: 'Integração Delivery', p: 'R$ 79/mês' },
+                    { l: 'Combo 3 Integrações', p: 'R$ 199/mês' },
+                  ].map((add, idx) => (
+                    <div key={idx} className="p-4 bg-slate-50 rounded-2xl flex justify-between items-center border border-slate-100">
+                      <span className="text-[10px] font-black uppercase text-slate-600">{add.l}</span>
+                      <span className="text-[10px] font-black text-blue-600">{add.p}</span>
                     </div>
                   ))}
                </div>
             </div>
-          </div>
-          <div className="flex-1 space-y-8">
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">Pronto para transformar sua gestão?</h2>
-            <p className="text-slate-500 text-lg font-medium">Junte-se a centenas de empresas que já otimizaram seus fluxos de suprimentos conosco.</p>
-            <div className="flex gap-4">
-              <button onClick={onOnboard} className="px-8 py-4 bg-blue-600 text-white rounded-xl font-black uppercase text-xs shadow-xl">Começar Teste Grátis</button>
-              <button onClick={onLogin} className="px-8 py-4 border border-slate-200 text-slate-900 rounded-xl font-black uppercase text-xs hover:bg-slate-50 transition-all">Fazer Login</button>
+            <div className="space-y-6 p-6">
+               <h4 className="text-xl font-black text-slate-900">Regras de Produto</h4>
+               <div className="space-y-4">
+                 <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0"><i className="fas fa-rocket"></i></div>
+                    <div><p className="font-black text-sm">Foco Inicial: Loja ou Restaurante</p><p className="text-xs text-slate-400 italic">No plano Free/Starter, você escolhe uma trilha operacional (PDV ou Mesas) e o core de estoque já vem incluído.</p></div>
+                 </div>
+                 <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0"><i className="fas fa-shield-halved"></i></div>
+                    <div><p className="font-black text-sm">Upgrade Inteligente (Soft Paywall)</p><p className="text-xs text-slate-400 italic">Te avisamos ao atingir 80% do limite. O bloqueio em 100% é apenas para novos registros, garantindo que você nunca perca acesso aos dados existentes.</p></div>
+                 </div>
+                 <div className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><i className="fas fa-handshake"></i></div>
+                    <div><p className="font-black text-sm">Sinergia Growth</p><p className="text-xs text-slate-400 italic">Ideal para o negócio híbrido. Controle sua cafeteria e sua loja de conveniência em uma única tela.</p></div>
+                 </div>
+               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Ideal Section - RESTORED & IMPROVED */}
+      <section id="ideal" className="py-24 bg-white px-6">
+        <div className="max-w-7xl mx-auto space-y-12">
+          <div className="text-center max-w-2xl mx-auto">
+             <h2 className="text-xs font-black uppercase text-blue-600 tracking-[0.3em] mb-4">Público-Alvo</h2>
+             <p className="text-3xl font-black text-slate-900 uppercase">A Solução Ideal para sua Jornada</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { title: 'Varejo & Lojas', icon: 'fa-shopping-bag', color: 'text-blue-600', bg: 'bg-blue-50', desc: 'Controle de frente de caixa, estoque por grade e integração com marketplaces.' },
+              { title: 'Gastronomia', icon: 'fa-utensils', color: 'text-rose-600', bg: 'bg-rose-50', desc: 'Gestão de mesas, comandas, fichas técnicas e insumos de alta rotatividade.' },
+              { title: 'Engenharia', icon: 'fa-helmet-safety', color: 'text-orange-600', bg: 'bg-orange-50', desc: 'RMs de campo, transferências logísticas e gestão documental de obras complexas.' },
+              { title: 'Fábricas', icon: 'fa-industry', color: 'text-emerald-600', bg: 'bg-emerald-50', desc: 'Planejamento de ordens de produção e controle de matérias-primas por lotes.' }
+            ].map((item, idx) => (
+              <div key={idx} className="p-8 border-2 border-slate-100 rounded-[32px] hover:border-blue-600 hover:shadow-xl transition-all duration-300 group">
+                <div className={`w-14 h-14 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center text-xl mb-6 group-hover:scale-110 transition-transform`}>
+                  <i className={`fas ${item.icon}`}></i>
+                </div>
+                <h4 className="text-lg font-black text-slate-900 mb-4">{item.title}</h4>
+                <p className="text-sm text-slate-500 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -300,7 +363,7 @@ export const Landing: React.FC<LandingProps> = ({ onLogin, onOnboard }) => {
              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">Navegação</h4>
              <ul className="space-y-2 text-sm font-bold">
                <li><button onClick={() => scrollTo('sobre')} className="text-slate-600 hover:text-white transition-colors">Sobre nós</button></li>
-               <li><button onClick={() => scrollTo('ideal')} className="text-slate-600 hover:text-white transition-colors">Ideal & Objetivos</button></li>
+               <li><button onClick={() => scrollTo('planos')} className="text-slate-600 hover:text-white transition-colors">Planos & Preços</button></li>
                <li><button onClick={onLogin} className="text-slate-600 hover:text-white transition-colors">Login</button></li>
              </ul>
           </div>

@@ -74,26 +74,41 @@ export const Onboarding: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <h3 className="text-2xl font-black text-slate-800 tracking-tight">O que você administra?</h3>
                 <p className="text-slate-400 text-sm">O sistema irá adaptar menus e regras ao seu negócio.</p>
               </div>
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {[
-                  { id: OperationType.CONSTRUCTION, label: 'Construção Civil', desc: 'Focado em Obras, RMs e Almoxarifados centrais.', icon: 'fa-hard-hat' },
-                  { id: OperationType.STORE, label: 'Lojas / Varejo', desc: 'Venda direta como saída principal, caixas e gerente.', icon: 'fa-store' },
-                  { id: OperationType.FACTORY, label: 'Indústria / Fábrica', desc: 'Gestão por setores de produção e requisições internas.', icon: 'fa-industry' },
+                  { id: OperationType.CONSTRUCTION, label: 'Construção Civil', desc: 'Obras, RMs e Centrais.', icon: 'fa-hard-hat' },
+                  { id: OperationType.STORE, label: 'Lojas / Varejo', desc: 'Venda direta e gerência.', icon: 'fa-store' },
+                  { id: OperationType.FACTORY, label: 'Indústria / Fábrica', desc: 'Produção e requisições.', icon: 'fa-industry' },
+                  { id: OperationType.RESTAURANT, label: 'Restaurante', desc: 'Insumos, validade e mesas.', icon: 'fa-utensils' },
                 ].map(op => (
                   <button 
                     key={op.id}
                     onClick={() => setCompany({...company, operationType: op.id})}
-                    className={`p-6 border-2 rounded-3xl flex items-center gap-6 text-left transition-all ${company.operationType === op.id ? 'border-blue-600 bg-blue-50 shadow-lg' : 'border-slate-100 hover:border-slate-200'}`}
+                    className={`p-6 border-2 rounded-3xl flex items-center gap-4 text-left transition-all ${company.operationType === op.id ? 'border-blue-600 bg-blue-50 shadow-lg scale-105' : 'border-slate-100 hover:border-slate-200'}`}
                   >
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl ${company.operationType === op.id ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400'}`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl shrink-0 ${company.operationType === op.id ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400'}`}>
                       <i className={`fas ${op.icon}`}></i>
                     </div>
                     <div>
-                      <p className="font-black text-slate-800">{op.label}</p>
-                      <p className="text-xs text-slate-400 font-medium">{op.desc}</p>
+                      <p className="font-black text-slate-800 text-sm">{op.label}</p>
+                      <p className="text-[10px] text-slate-400 font-medium leading-tight">{op.desc}</p>
                     </div>
                   </button>
                 ))}
+                
+                {/* Opção + Outros */}
+                <button 
+                  className="p-6 border-2 border-dashed border-slate-100 rounded-3xl flex items-center gap-4 text-left opacity-60 cursor-not-allowed group"
+                  disabled
+                >
+                  <div className="w-12 h-12 rounded-xl bg-slate-50 text-slate-300 flex items-center justify-center text-xl shrink-0 group-hover:bg-slate-100">
+                    <i className="fas fa-plus"></i>
+                  </div>
+                  <div>
+                    <p className="font-black text-slate-400 text-sm">Outros negócios</p>
+                    <p className="text-[10px] text-slate-300 font-medium leading-tight">Em breve novos módulos.</p>
+                  </div>
+                </button>
               </div>
             </div>
           )}
@@ -109,7 +124,7 @@ export const Onboarding: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 <input className="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold" placeholder="Ex: Engenharia S/A" value={company.name} onChange={e => setCompany({...company, name: e.target.value})} />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-slate-400">Primeira Unidade ({company.operationType === OperationType.STORE ? 'Loja' : company.operationType === OperationType.FACTORY ? 'Planta' : 'Obra'})</label>
+                <label className="text-[10px] font-black uppercase text-slate-400">Primeira Unidade ({company.operationType === OperationType.STORE ? 'Loja' : company.operationType === OperationType.FACTORY ? 'Planta' : company.operationType === OperationType.RESTAURANT ? 'Restaurante' : 'Obra'})</label>
                 <input className="w-full p-4 bg-slate-50 border rounded-2xl outline-none font-bold" placeholder="Ex: Unidade Centro" value={company.unitName} onChange={e => setCompany({...company, unitName: e.target.value})} />
               </div>
             </div>

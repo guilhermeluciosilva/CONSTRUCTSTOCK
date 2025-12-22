@@ -42,11 +42,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [units, currentScope]);
 
   const getLabel = (key: 'UNIT' | 'SECTOR' | 'RM'): string => {
-    const type = activeTenant?.operationType || OperationType.CONSTRUCTION;
+    const type = activeUnit?.operationType || activeTenant?.operationType || OperationType.CONSTRUCTION;
     const labels = {
       [OperationType.STORE]: { UNIT: 'Loja', SECTOR: 'Seção', RM: 'Pedido Interno' },
       [OperationType.CONSTRUCTION]: { UNIT: 'Obra', SECTOR: 'Frente de Serviço', RM: 'Requisição (RM)' },
       [OperationType.FACTORY]: { UNIT: 'Planta', SECTOR: 'Setor', RM: 'Requisição de Produção' },
+      [OperationType.RESTAURANT]: { UNIT: 'Restaurante', SECTOR: 'Salão', RM: 'Pedido de Insumos' },
+      [OperationType.OTHER]: { UNIT: 'Unidade', SECTOR: 'Setor', RM: 'Requisição' },
     };
     return labels[type][key];
   };
@@ -61,9 +63,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const t = await api.getTenants();
     setTenants(t);
     
-    const freshTenant = t.find(x => x.id === currentScope.tenantId);
     const tid = currentScope.tenantId;
-    
     const u = await api.getWorks(tid);
     setUnits([...u]);
     
@@ -72,13 +72,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const wh = await api.getWarehouses(unitId);
       setWarehouses([...wh]);
       
-      // Lógica de Auto-Seleção: Se houver apenas 1 almoxarifado e nenhum selecionado, seleciona automaticamente
-      if (wh.length === 1 && !currentScope.warehouseId) {
-        setScopeNormalized({ ...currentScope, warehouseId: wh[0].id });
+      const currentUnit = u.find(x => x.id === unitId);
+      const effectiveOpType = currentUnit?.operationType || activeTenant?.operationType;
+
+      // REGRA: Lojas e Restaurantes selecionam automaticamente o estoque central
+      if (effectiveOpType === OperationType.STORE || effectiveOpType === OperationType.RESTAURANT) {
+        const centralWh = wh.find(w => w.isCentral) || wh[0];
+        if (centralWh && currentScope.warehouseId !== centralWh.id) {
+          setScopeNormalized({ ...currentScope, warehouseId: centralWh.id });
+        }
+      } else {
+        // Para Obras/Fábricas, se houver apenas um, seleciona
+        if (wh.length === 1 && !currentScope.warehouseId) {
+          setScopeNormalized({ ...currentScope, warehouseId: wh[0].id });
+        }
       }
       
-      // Carregamento real de setores se for Fábrica
-      if (freshTenant?.operationType === OperationType.FACTORY) {
+      if (effectiveOpType === OperationType.FACTORY || effectiveOpType === OperationType.RESTAURANT) {
          const s = await api.getSectors(unitId);
          setSectors(s);
       } else {
