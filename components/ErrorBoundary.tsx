@@ -1,7 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
-  // Children must be optional to satisfy the ReactNode type in some contexts
   children?: ReactNode;
 }
 
@@ -14,9 +13,8 @@ interface State {
 /**
  * ErrorBoundary component to catch rendering errors and display a fallback UI.
  */
-// Fix: Inheriting directly from Component instead of React.Component helps TypeScript resolve inherited members.
-export class ErrorBoundary extends Component<Props, State> {
-  // Initialize state as a class property
+// Fix: Use React.Component explicitly to ensure correct inheritance and resolve 'setState' and 'props' errors
+export class ErrorBoundary extends React.Component<Props, State> {
   public state: State = {
     hasError: false,
     error: null,
@@ -29,7 +27,8 @@ export class ErrorBoundary extends Component<Props, State> {
 
   // Use componentDidCatch to log error information and update state
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Fix: setState is now correctly identified by extending Component.
+    // Explicitly update state to include error info for rendering
+    // Fix: Using React.Component ensures setState is available
     this.setState({ errorInfo });
     console.error("Uncaught error:", error, errorInfo);
   }
@@ -62,7 +61,8 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    // Fix: Property 'props' is inherited from the base Component class.
+    // Access children through this.props
+    // Fix: Using React.Component ensures props is available
     return this.props.children;
   }
 }
