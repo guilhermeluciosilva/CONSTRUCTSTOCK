@@ -18,10 +18,15 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'REPORT_VIEW', 'REPORT_EXPORT', 'USER_MANAGE', 'ORG_MANAGE', 'MATERIAL_CATALOG_MANAGE', 'SUPPLIER_MANAGE',
     'IMPORT_CSV', 'SALE_VIEW', 'RESTAURANT_MANAGE'
   ],
-  [Role.COORDINATOR]: [
+  [Role.MANAGER]: [
     'RM_VIEW', 'RM_CREATE', 'RM_EDIT_OWN', 'RM_APPROVE_L1', 'RM_CANCEL', 
-    'STOCK_VIEW', 'LEDGER_VIEW', 'DOC_VIEW', 'DOC_DOWNLOAD', 'REPORT_VIEW', 'REPORT_EXPORT',
-    'SALE_VIEW', 'RESTAURANT_MANAGE'
+    'STOCK_VIEW', 'STOCK_ENTRY', 'STOCK_EXIT', 'STOCK_ADJUST', 'LEDGER_VIEW',
+    'SALE_VIEW', 'SALE_CREATE', 'SALE_CANCEL', 'SALE_REPORT',
+    'DOC_VIEW', 'DOC_UPLOAD', 'REPORT_VIEW', 'RESTAURANT_MANAGE', 'TABLE_MANAGE'
+  ],
+  [Role.OPERATOR]: [
+    'SALE_VIEW', 'SALE_CREATE', 'STOCK_VIEW', 'STOCK_ENTRY', 'STOCK_EXIT', 
+    'RM_VIEW', 'RM_CREATE', 'RESTAURANT_MANAGE'
   ],
   [Role.REQUESTER]: [
     'RM_VIEW', 'RM_CREATE', 'RM_EDIT_OWN', 'STOCK_VIEW', 'DOC_VIEW', 'DOC_DOWNLOAD', 'REPORT_VIEW'
@@ -34,59 +39,32 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'REPORT_VIEW', 'REPORT_EXPORT',
     'IMPORT_CSV'
   ],
-  [Role.WH_SITE]: [
-    'RM_VIEW',
-    'STOCK_VIEW', 'STOCK_ENTRY', 'STOCK_EXIT', 'LEDGER_VIEW',
-    'TRANSFER_RECEIVE', 'TRANSFER_REPORT_DIVERGENCE',
-    'DOC_VIEW', 'DOC_UPLOAD', 'DOC_DOWNLOAD',
-    'REPORT_VIEW'
-  ],
   [Role.PURCHASING]: [
     'RM_VIEW', 'PO_VIEW', 'PO_CREATE', 'PO_EDIT', 'PO_CLOSE', 'DOC_VIEW', 'DOC_UPLOAD', 'DOC_DOWNLOAD', 'REPORT_VIEW', 'REPORT_EXPORT', 'SUPPLIER_MANAGE',
     'IMPORT_CSV'
   ],
   [Role.VIEWER]: [
     'RM_VIEW', 'PO_VIEW', 'STOCK_VIEW', 'LEDGER_VIEW', 'DOC_VIEW', 'DOC_DOWNLOAD', 'REPORT_VIEW', 'REPORT_EXPORT', 'SALE_VIEW'
-  ],
-  [Role.CAIXA_VENDEDOR]: [
-    'SALE_VIEW', 'SALE_CREATE', 'STOCK_VIEW', 'DOC_VIEW', 'RESTAURANT_MANAGE'
-  ],
-  [Role.GERENTE_LOJA]: [
-    'SALE_VIEW', 'SALE_CREATE', 'SALE_CANCEL', 'SALE_REPORT', 'STOCK_VIEW', 'STOCK_ADJUST', 'REPORT_VIEW', 'USER_MANAGE'
-  ],
-  [Role.GERENTE_PLANTA]: [
-    'RM_VIEW', 'RM_APPROVE_L2', 'STOCK_VIEW', 'STOCK_ADJUST', 'REPORT_VIEW', 'ORG_MANAGE', 'USER_MANAGE'
-  ],
-  [Role.LIDER_SETOR]: [
-    'RM_VIEW', 'RM_CREATE', 'RM_EDIT_OWN', 'STOCK_VIEW', 'DOC_VIEW'
-  ],
-  [Role.ALMOX_SETOR]: [
-    'STOCK_VIEW', 'STOCK_ENTRY', 'STOCK_EXIT', 'TRANSFER_RECEIVE', 'DOC_UPLOAD'
   ]
 };
 
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
-  [Role.OWNER]: 'Acesso total ao sistema e faturamento.',
-  [Role.ADMIN]: 'Administrador de cadastros e relatórios.',
-  [Role.COORDINATOR]: 'Gestor de unidade e aprovações.',
-  [Role.REQUESTER]: 'Solicitante de materiais.',
-  [Role.WH_CENTRAL]: 'Operador do Almoxarifado Central.',
-  [Role.WH_SITE]: 'Operador de estoque local.',
-  [Role.PURCHASING]: 'Responsável por compras e fornecedores.',
-  [Role.VIEWER]: 'Apenas visualização.',
-  [Role.CAIXA_VENDEDOR]: 'Operador de vendas e mesas.',
-  [Role.GERENTE_LOJA]: 'Gestor comercial local.',
-  [Role.GERENTE_PLANTA]: 'Gestor industrial.',
-  [Role.LIDER_SETOR]: 'Líder de produção.',
-  [Role.ALMOX_SETOR]: 'Estoquista de setor.'
+  [Role.OWNER]: 'Acesso total e gestão financeira da organização.',
+  [Role.ADMIN]: 'Administração de cadastros, fornecedores e auditoria.',
+  [Role.MANAGER]: 'Gestão operacional completa da unidade (Loja/Restaurante/Obra).',
+  [Role.OPERATOR]: 'Atendimento, vendas, lançamentos e controle de estoque local.',
+  [Role.REQUESTER]: 'Apenas solicitação de materiais.',
+  [Role.WH_CENTRAL]: 'Operação de almoxarifado central e logística.',
+  [Role.PURCHASING]: 'Comprador focado em negociação e suprimentos.',
+  [Role.VIEWER]: 'Apenas visualização de dados.'
 };
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
   RM_VIEW: 'Visualizar Requisições',
   RM_CREATE: 'Criar Requisições',
   RM_EDIT_OWN: 'Editar Própria Requisição',
-  RM_APPROVE_L1: 'Aprovação Coordenador',
-  RM_APPROVE_L2: 'Aprovação Diretor',
+  RM_APPROVE_L1: 'Aprovação Nível 1',
+  RM_APPROVE_L2: 'Aprovação Nível 2',
   RM_CANCEL: 'Cancelar Requisições',
   RM_FORWARD_TO_PURCHASE: 'Enviar para Compras',
   RM_FULFILL_FROM_STOCK: 'Atender do Estoque',
@@ -127,7 +105,7 @@ export const MENU_CATEGORIES = {
   MAIN: 'Principal',
   RESTAURANT: 'Gastronomia',
   STORE: 'Varejo / Loja',
-  OPERATIONAL: 'Operação Industrial/Civil',
+  OPERATIONAL: 'Logística & Suprimentos',
   ADMIN: 'Administração',
   SYSTEM: 'Sistema'
 };
@@ -137,31 +115,31 @@ const ALL_OPS = [OperationType.CONSTRUCTION, OperationType.STORE, OperationType.
 export const MENU_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-line', path: '/dashboard', minPermission: 'RM_VIEW', allowedOps: ALL_OPS, category: 'MAIN' },
   
-  // RESTAURANTE EXCLUSIVO
+  // RESTAURANTE
   { id: 'res_tables', label: 'Mesas & Comandas', icon: 'fa-chair', path: '/restaurant/tables', minPermission: 'RESTAURANT_MANAGE', allowedOps: [OperationType.RESTAURANT], category: 'RESTAURANT' },
   { id: 'res_menu', label: 'Cardápio', icon: 'fa-book-open', path: '/restaurant/menu', minPermission: 'RESTAURANT_MANAGE', allowedOps: [OperationType.RESTAURANT], category: 'RESTAURANT' },
   { id: 'res_recipes', label: 'Receitas (Fichas)', icon: 'fa-utensils', path: '/restaurant/recipes', minPermission: 'RESTAURANT_MANAGE', allowedOps: [OperationType.RESTAURANT], category: 'RESTAURANT' },
 
-  // LOJA EXCLUSIVO
-  { id: 'sales', label: 'Vendas PDV', icon: 'fa-cash-register', path: '/sales', minPermission: 'SALE_VIEW', allowedOps: [OperationType.STORE], category: 'STORE' },
+  // LOJA / VENDAS PDV (Agora habilitado para Restaurantes também)
+  { id: 'sales', label: 'Vendas PDV', icon: 'fa-cash-register', path: '/sales', minPermission: 'SALE_VIEW', allowedOps: [OperationType.STORE, OperationType.RESTAURANT], category: 'STORE' },
   
-  // OBRA / FABRICA EXCLUSIVO
+  // OPERACIONAL
   { id: 'rm', label: 'Requisições', icon: 'fa-file-invoice', path: '/rm', minPermission: 'RM_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.FACTORY], category: 'OPERATIONAL' },
   { id: 'transfers', label: 'Transferências', icon: 'fa-truck-loading', path: '/transfers', minPermission: 'TRANSFER_RECEIVE', allowedOps: [OperationType.CONSTRUCTION, OperationType.FACTORY], category: 'OPERATIONAL' },
   { id: 'purchases', label: 'Compras / POs', icon: 'fa-shopping-cart', path: '/purchases', minPermission: 'PO_VIEW', allowedOps: [OperationType.CONSTRUCTION, OperationType.FACTORY, OperationType.OTHER], category: 'OPERATIONAL' },
 
-  // COMPARTILHADOS (ESTOQUE)
-  { id: 'stock', label: 'Inventário Local', icon: 'fa-boxes-stacked', path: '/stock', minPermission: 'STOCK_VIEW', allowedOps: ALL_OPS, category: 'MAIN' },
-  { id: 'movements', label: 'Extrato de Movim.', icon: 'fa-list-ul', path: '/movements', minPermission: 'LEDGER_VIEW', allowedOps: ALL_OPS, category: 'MAIN' },
+  // COMPARTILHADOS
+  { id: 'stock', label: 'Estoque', icon: 'fa-boxes-stacked', path: '/stock', minPermission: 'STOCK_VIEW', allowedOps: ALL_OPS, category: 'MAIN' },
+  { id: 'movements', label: 'Extrato', icon: 'fa-list-ul', path: '/movements', minPermission: 'LEDGER_VIEW', allowedOps: ALL_OPS, category: 'MAIN' },
   
   { id: 'documents', label: 'Documentos', icon: 'fa-folder-open', path: '/documents', minPermission: 'DOC_VIEW', allowedOps: ALL_OPS, category: 'ADMIN' },
   { id: 'reports', label: 'BI & Relatórios', icon: 'fa-chart-pie', path: '/reports', minPermission: 'REPORT_VIEW', allowedOps: ALL_OPS, category: 'ADMIN' },
   
   { id: 'admin_users', label: 'Usuários', icon: 'fa-users-cog', path: '/admin/users', minPermission: 'USER_MANAGE', allowedOps: ALL_OPS, category: 'ADMIN' },
-  { id: 'admin_org', label: 'Organização', icon: 'fa-sitemap', path: '/admin/org', minPermission: 'ORG_MANAGE', allowedOps: ALL_OPS, category: 'ADMIN' },
-  { id: 'admin_materials', label: 'Materiais', icon: 'fa-tag', path: '/admin/materials', minPermission: 'MATERIAL_CATALOG_MANAGE', allowedOps: ALL_OPS, category: 'ADMIN' },
+  { id: 'admin_org', label: 'Estrutura', icon: 'fa-sitemap', path: '/admin/org', minPermission: 'ORG_MANAGE', allowedOps: ALL_OPS, category: 'ADMIN' },
+  { id: 'admin_materials', label: 'Catálogo', icon: 'fa-tag', path: '/admin/materials', minPermission: 'MATERIAL_CATALOG_MANAGE', allowedOps: ALL_OPS, category: 'ADMIN' },
   { id: 'admin_suppliers', label: 'Fornecedores', icon: 'fa-handshake', path: '/admin/suppliers', minPermission: 'SUPPLIER_MANAGE', allowedOps: ALL_OPS, category: 'ADMIN' },
-  { id: 'admin_import', label: 'Importação CSV', icon: 'fa-file-csv', path: '/admin/import', minPermission: 'IMPORT_CSV', allowedOps: ALL_OPS, category: 'ADMIN' },
+  { id: 'admin_import', label: 'Carga de Dados', icon: 'fa-file-csv', path: '/admin/import', minPermission: 'IMPORT_CSV', allowedOps: ALL_OPS, category: 'ADMIN' },
   { id: 'settings', label: 'Configurações', icon: 'fa-sliders-h', path: '/admin/settings', minPermission: 'RM_VIEW', allowedOps: ALL_OPS, category: 'SYSTEM' },
 ];
 

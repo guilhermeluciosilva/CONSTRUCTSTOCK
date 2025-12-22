@@ -15,11 +15,13 @@ interface AppContextType {
   activeRole: string;
   activeTenant: Tenant | null;
   activeUnit: Unit | null;
+  theme: 'light' | 'dark';
   setScope: (scope: Scope) => void;
   refreshMetadata: () => Promise<void>;
   isPermittedUnit: (unitId: string) => boolean;
   isPermittedWh: (whId: string) => boolean;
   getLabel: (key: 'UNIT' | 'SECTOR' | 'RM') => string;
+  toggleTheme: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -31,6 +33,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [sectors, setSectors] = useState<Sector[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [currentScope, setCurrentScope] = useState<Scope | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  // Inicialização do Tema
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('THEME_PREF') as 'light' | 'dark';
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  // Aplicação do Tema na DOM
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('THEME_PREF', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   const activeTenant = useMemo(() => {
     return tenants.find(t => t.id === currentScope?.tenantId) || null;
@@ -65,29 +88,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const tid = currentScope.tenantId;
     const u = await api.getWorks(tid);
-    setUnits([...u]);
     
-    const unitId = getScopeUnitId(currentScope);
-    if (unitId) {
-      const wh = await api.getWarehouses(unitId);
-      setWarehouses([...wh]);
+    const permittedUnits = u.filter(unit => {
+      if (!user) return false;
+      if (user.roleAssignments.some(ra => ra.role === Role.OWNER)) return true;
+      return user.roleAssignments.some(ra => !ra.scope.unitId || ra.scope.unitId === unit.id);
+    });
+    
+    setUnits(permittedUnits);
+    
+    let effectiveUnitId = getScopeUnitId(currentScope);
+    if (!effectiveUnitId && permittedUnits.length === 1) {
+      effectiveUnitId = permittedUnits[0].id;
+    }
+
+    if (effectiveUnitId) {
+      const wh = await api.getWarehouses(effectiveUnitId);
+      const permittedWhs = wh.filter(w => {
+        if (!user) return false;
+        if (user.roleAssignments.some(ra => ra.role === Role.OWNER)) return true;
+        return user.roleAssignments.some(ra => !ra.scope.warehouseId || ra.scope.warehouseId === w.id);
+      });
+      setWarehouses(permittedWhs);
       
-      const currentUnit = u.find(x => x.id === unitId);
+      const currentUnit = permittedUnits.find(x => x.id === effectiveUnitId);
       const effectiveOpType = currentUnit?.operationType || activeTenant?.operationType;
 
-      // REGRA: Auto-seleção de almoxarifado para Restaurantes e Lojas com apenas 1 estoque
-      if (wh.length > 0) {
-        const hasValidWh = wh.some(w => w.id === currentScope.warehouseId);
-        if (!hasValidWh) {
-          // Se for restaurante e tiver estoques, pega o central ou o primeiro disponível
-          const autoWh = wh.find(w => w.isCentral) || wh[0];
-          setScopeNormalized({ ...currentScope, warehouseId: autoWh.id });
-          return; 
+      let effectiveWhId = currentScope.warehouseId;
+      if (permittedWhs.length > 0) {
+        const isValidWh = permittedWhs.some(w => w.id === effectiveWhId);
+        if (!isValidWh) {
+          effectiveWhId = permittedWhs.find(w => w.isCentral)?.id || permittedWhs[0].id;
         }
+      }
+
+      if (effectiveUnitId !== getScopeUnitId(currentScope) || effectiveWhId !== currentScope.warehouseId) {
+        setScopeNormalized({ 
+          ...currentScope, 
+          unitId: effectiveUnitId, 
+          workId: effectiveUnitId, 
+          warehouseId: effectiveWhId 
+        });
       }
       
       if (effectiveOpType === OperationType.FACTORY || effectiveOpType === OperationType.RESTAURANT) {
-         const s = await api.getSectors(unitId);
+         const s = await api.getSectors(effectiveUnitId);
          setSectors(s);
       } else {
          setSectors([]);
@@ -151,7 +196,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider value={{ 
       tenants, units, works: units, sectors, warehouses, currentScope, activeRole, activeTenant, activeUnit,
-      setScope: setScopeNormalized, refreshMetadata, isPermittedUnit, isPermittedWh, getLabel 
+      theme, setScope: setScopeNormalized, refreshMetadata, isPermittedUnit, isPermittedWh, getLabel, toggleTheme 
     }}>
       {children}
     </AppContext.Provider>

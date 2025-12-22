@@ -2,17 +2,12 @@
 export enum Role {
   OWNER = 'OWNER',
   ADMIN = 'ADMIN',
-  COORDINATOR = 'COORDINATOR',
+  MANAGER = 'MANAGER', // Unificado: Gerente de Loja, Restaurante ou Obra
+  OPERATOR = 'OPERATOR', // Unificado: Vendedor, Garçom ou Operador de Estoque
   REQUESTER = 'REQUESTER',
   WH_CENTRAL = 'WH_CENTRAL',
-  WH_SITE = 'WH_SITE',
   PURCHASING = 'PURCHASING',
-  VIEWER = 'VIEWER',
-  CAIXA_VENDEDOR = 'CAIXA_VENDEDOR',
-  GERENTE_LOJA = 'GERENTE_LOJA',
-  GERENTE_PLANTA = 'GERENTE_PLANTA',
-  LIDER_SETOR = 'LIDER_SETOR',
-  ALMOX_SETOR = 'ALMOX_SETOR'
+  VIEWER = 'VIEWER'
 }
 
 export enum OperationType {

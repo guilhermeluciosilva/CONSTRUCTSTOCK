@@ -79,7 +79,6 @@ class ApiService {
     this.save();
   }
 
-  // AUTH & CORE
   async login(email: string, password?: string): Promise<User> {
     const user = this.db.users.find(u => u.email === email && (!password || u.password === password));
     if (!user) throw new Error('Credenciais inválidas');
@@ -90,13 +89,10 @@ class ApiService {
   async getWarehouses(unitId: string): Promise<Warehouse[]> { return this.db.warehouses.filter(wh => wh.unitId === unitId && wh.active); }
   async getMaterials(): Promise<Material[]> { return this.db.materials; }
   async getUserById(id: string): Promise<User | undefined> { return this.db.users.find(u => u.id === id); }
-  
-  // Fix: unified duplicate function implementations and kept tenant filtering logic
   async getUsers(tenantId: string): Promise<User[]> { 
     return this.db.users.filter(u => u.roleAssignments.some(ra => ra.scope.tenantId === tenantId)); 
   }
 
-  // STOCK & MOVEMENTS
   async getStock(scope: Scope) { 
     return this.db.stocks.filter(s => {
        const wh = this.db.warehouses.find(w => w.id === s.warehouseId);
@@ -124,7 +120,6 @@ class ApiService {
     }); 
   }
 
-  // RESTAURANTE: COMANDAS
   async getTables(tenantId: string, unitId: string): Promise<RestaurantTable[]> {
     return this.db.tables.filter(t => t.tenantId === tenantId && t.unitId === unitId);
   }
@@ -168,6 +163,9 @@ class ApiService {
     const tab = this.db.tabs.find(t => t.id === tabId);
     if (!tab || tab.status !== 'OPEN') throw new Error('Comanda inválida');
 
+    const table = this.db.tables.find(t => t.id === tab.tableId);
+    const tableLabel = table ? `Mesa ${table.nameOrNumber}` : 'Mesa Desconhecida';
+
     const neededMaterials: Record<string, number> = {};
     for (const item of tab.items.filter(i => i.status !== 'CANCELED')) {
       const menu = this.db.menuItems.find(m => m.id === item.menuItemId);
@@ -182,23 +180,20 @@ class ApiService {
       }
     }
 
-    // Baixa do estoque
     for (const [matId, qty] of Object.entries(neededMaterials)) {
       await this.addMovement({
         warehouseId, materialId: matId, type: 'RECIPE_CONSUMPTION',
-        quantity: qty, userId, description: `Consumo Mesa #${tabId}`, referenceId: tabId
+        quantity: qty, userId, description: `Consumo ${tableLabel} - ${tab.customerName || 'Venda'}`, referenceId: tabId
       });
     }
 
     tab.status = 'CLOSED';
     tab.closedAt = new Date().toISOString();
     tab.paymentMethod = paymentMethod;
-    const table = this.db.tables.find(t => t.id === tab.tableId);
     if (table) { table.status = 'FREE'; delete table.activeTabId; }
     this.save();
   }
 
-  // OUTROS MÉTODOS (CONSTRUCTION, SALES, ETC) - Mantidos para funcionamento pleno
   async getRMs(s: Scope) { return this.db.rms.filter(r => r.tenantId === s.tenantId && (!s.unitId || r.unitId === s.unitId)); }
   async getRMById(id: string) { return { rm: this.db.rms.find(r => r.id === id)!, items: this.db.rmItems.filter(i => i.rmId === id) }; }
   async createRM(d: any, i: any[]) { 
@@ -207,13 +202,10 @@ class ApiService {
     i.forEach(it => this.db.rmItems.push({ ...it, id: `RMI-${Math.random()}`, rmId: id, quantityFulfilled: 0, status: RMItemStatus.PENDING }));
     this.save();
   }
-  // Fix: Added missing updateRM implementation
   async updateRM(id: string, data: any, items: any[]) {
     const rmIdx = this.db.rms.findIndex(r => r.id === id);
     if (rmIdx === -1) throw new Error('RM não encontrada');
     this.db.rms[rmIdx] = { ...this.db.rms[rmIdx], ...data };
-    
-    // Replace items
     this.db.rmItems = this.db.rmItems.filter(i => i.rmId !== id);
     items.forEach(it => this.db.rmItems.push({ ...it, id: `RMI-${Math.random()}`, rmId: id, quantityFulfilled: 0, status: RMItemStatus.PENDING }));
     this.save();
@@ -227,13 +219,9 @@ class ApiService {
     i.forEach(it => this.db.poItems.push({ ...it, id: `POI-${Math.random()}`, poId: id }));
     this.save();
   }
-  // Fix: Added missing closePO implementation
   async closePO(id: string, status: 'CLOSED' | 'CANCELED') {
     const po = this.db.pos.find(p => p.id === id);
-    if (po) {
-      po.status = status;
-      this.save();
-    }
+    if (po) { po.status = status; this.save(); }
   }
 
   async getTransfers(s: Scope) { return this.db.transfers.filter(t => t.tenantId === s.tenantId); }
@@ -244,50 +232,29 @@ class ApiService {
     i.forEach(it => this.db.transferItems.push({ ...it, id: `TRFI-${Math.random()}`, transferId: id, quantitySent: it.quantityRequested, quantityReceived: 0 }));
     this.save();
   }
-  // Fix: Added missing dispatchTransfer implementation
   async dispatchTransfer(id: string) {
     const transfer = this.db.transfers.find(t => t.id === id);
     if (!transfer) throw new Error('Transferência não encontrada');
     const items = this.db.transferItems.filter(i => i.transferId === id);
-    
     for (const it of items) {
-      await this.addMovement({
-        warehouseId: transfer.originWarehouseId,
-        materialId: it.materialId,
-        type: 'TRANSFER_OUT',
-        quantity: it.quantitySent || it.quantityRequested,
-        userId: 'u1',
-        description: `Saída Transferência #${id}`
-      });
+      await this.addMovement({ warehouseId: transfer.originWarehouseId, materialId: it.materialId, type: 'TRANSFER_OUT', quantity: it.quantitySent || it.quantityRequested, userId: 'u1', description: `Saída Transferência #${id}` });
     }
-    
     transfer.status = 'IN_TRANSIT';
     transfer.dispatchedAt = new Date().toISOString();
     this.save();
   }
 
-  // Fix: Added missing receiveTransfer implementation
   async receiveTransfer(id: string, receivedQtys: Record<string, number>) {
     const transfer = this.db.transfers.find(t => t.id === id);
     if (!transfer) throw new Error('Transferência não encontrada');
     const items = this.db.transferItems.filter(i => i.transferId === id);
-    
     let hasDivergence = false;
     for (const it of items) {
       const qty = receivedQtys[it.id];
       it.quantityReceived = qty;
       if (qty !== (it.quantitySent || it.quantityRequested)) hasDivergence = true;
-      
-      await this.addMovement({
-        warehouseId: transfer.destinationWarehouseId,
-        materialId: it.materialId,
-        type: 'TRANSFER_IN',
-        quantity: qty,
-        userId: 'u1',
-        description: `Entrada Transferência #${id}`
-      });
+      await this.addMovement({ warehouseId: transfer.destinationWarehouseId, materialId: it.materialId, type: 'TRANSFER_IN', quantity: qty, userId: 'u1', description: `Entrada Transferência #${id}` });
     }
-    
     transfer.status = hasDivergence ? 'DIVERGENCE' : 'DONE';
     transfer.receivedAt = new Date().toISOString();
     this.save();
@@ -309,7 +276,6 @@ class ApiService {
     if (idx >= 0) this.db.recipes[idx] = { ...r, id }; else this.db.recipes.push({ ...r, id });
     this.save();
   }
-  // Fix: Added missing deleteRecipe implementation
   async deleteRecipe(id: string) {
     this.db.recipes = this.db.recipes.filter(r => r.id !== id);
     this.save();
@@ -322,8 +288,7 @@ class ApiService {
     if (idx >= 0) this.db.menuItems[idx] = { ...m, id }; else this.db.menuItems.push({ ...m, id });
     this.save();
   }
-  // Admin & Helpers
-  // Fix: Added missing createUser implementation and removed duplicate getUsers that was here
+  
   async createUser(name: string, email: string, tenantId: string, password?: string): Promise<User> {
     const id = `U-${Date.now()}`;
     const newUser: User = { id, name, email, password: password || '123', roleAssignments: [] };
@@ -333,12 +298,48 @@ class ApiService {
   }
 
   async onboard(a: any, c: any) { 
-    const tId = `T-${Date.now()}`; const uId = `W-${Date.now()}`;
+    const tId = `T-${Date.now()}`; 
+    const uId = `W-${Date.now()}`;
+    const whId = `WH-${Date.now()}`;
+
+    // Tenant
     this.db.tenants.push({ id: tId, name: c.name, active: true, operationType: c.operationType });
-    this.db.works.push({ id: uId, tenantId: tId, name: c.unitName, active: true, enabledModuleIds: ['dashboard', 'stock', 'settings'], operationType: c.operationType });
-    this.db.users.push({ id: `U-${Date.now()}`, name: a.name, email: a.email, password: a.password, roleAssignments: [{ role: Role.OWNER, scope: { tenantId: tId } }] });
+    
+    // Unidade
+    this.db.works.push({ 
+      id: uId, 
+      tenantId: tId, 
+      name: c.unitName, 
+      active: true, 
+      enabledModuleIds: ['dashboard', 'res_tables', 'res_menu', 'res_recipes', 'stock', 'movements', 'sales', 'reports', 'settings'], 
+      operationType: c.operationType 
+    });
+
+    // Estoque Padrão Automático
+    this.db.warehouses.push({
+      id: whId,
+      unitId: uId,
+      workId: uId,
+      name: 'Estoque Principal',
+      isCentral: true,
+      active: true
+    });
+
+    // Usuário Admin
+    this.db.users.push({ 
+      id: `U-${Date.now()}`, 
+      name: a.name, 
+      email: a.email, 
+      password: a.password, 
+      roleAssignments: [{ 
+        role: Role.OWNER, 
+        scope: { tenantId: tId, unitId: uId, workId: uId, warehouseId: whId } 
+      }] 
+    });
+    
     this.save();
   }
+
   async updateUnitModules(id: string, mods: string[]) {
     const u = this.db.works.find(x => x.id === id);
     if (u) { u.enabledModuleIds = mods; this.save(); }

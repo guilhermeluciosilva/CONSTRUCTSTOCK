@@ -1,4 +1,3 @@
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
@@ -15,34 +14,28 @@ interface State {
 /**
  * ErrorBoundary component to catch rendering errors and display a fallback UI.
  */
-// Fix: Use explicit React.Component to ensure type safety and correct property resolution in class inheritance.
-export class ErrorBoundary extends React.Component<Props, State> {
-  // Fix: Explicitly declare state type and removed problematic override modifier.
-  public state: State;
-
-  constructor(props: Props) {
-    super(props);
-    // Fix: Explicitly initializing state in constructor to ensure it's correctly recognized by the type checker as part of the instance.
-    this.state = {
-      hasError: false,
-      error: null,
-      errorInfo: null
-    };
-  }
+// Fix: Inheriting directly from Component instead of React.Component helps TypeScript resolve inherited members.
+export class ErrorBoundary extends Component<Props, State> {
+  // Initialize state as a class property
+  public state: State = {
+    hasError: false,
+    error: null,
+    errorInfo: null
+  };
 
   public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error, errorInfo: null };
   }
 
   // Use componentDidCatch to log error information and update state
-  // Fix: Removed problematic override modifier.
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Fix: setState is now correctly identified by extending Component.
     this.setState({ errorInfo });
     console.error("Uncaught error:", error, errorInfo);
   }
 
-  // Fix: Removed problematic override modifier and correctly accessing base class properties.
   public render() {
+    // Check state for rendering fallback UI
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
@@ -69,6 +62,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       );
     }
 
+    // Fix: Property 'props' is inherited from the base Component class.
     return this.props.children;
   }
 }
