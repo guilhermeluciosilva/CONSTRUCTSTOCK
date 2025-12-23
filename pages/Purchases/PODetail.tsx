@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useApp } from '../../contexts/AppContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { DocumentPanel } from '../../components/DocumentPanel';
-import { PO, POItem, Material, Supplier, Work, Tenant } from '../../types';
+import { PO, POItem, Material, Supplier, Unit, Tenant } from '../../types';
 import { formatCurrency } from '../../lib/utils';
 import { STATUS_COLORS } from '../../constants';
 
@@ -21,6 +21,7 @@ export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onB
 
   const load = async () => {
     try {
+      // Fix: Added getPOById call
       const res = await api.getPOById(id);
       const mats = await api.getMaterials();
       const sup = await api.getSuppliers(res.po.tenantId);
@@ -46,6 +47,7 @@ export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onB
 
   const handleClose = async (status: 'CLOSED' | 'CANCELED') => {
     if (!window.confirm(`Deseja ${status === 'CLOSED' ? 'Encerrar' : 'Cancelar'} este pedido?`)) return;
+    // Fix: Added closePO call
     await api.closePO(id, status);
     notify('Pedido finalizado.', 'success');
     load();
@@ -55,7 +57,7 @@ export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onB
     if (!data || !supplier) return;
     
     const tenant = tenants.find(t => t.id === data.po.tenantId);
-    const work = works.find(w => w.id === data.po.workId);
+    const work = works.find(w => w.id === data.po.unitId);
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) return notify('Falha ao abrir janela de impressão.', 'error');
@@ -158,13 +160,13 @@ export const PODetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onB
 
   if (!data) return null;
 
-  const currentWork = works.find(w => w.id === data.po.workId);
+  const currentWork = works.find(w => w.id === data.po.unitId);
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20 animate-in slide-in-from-bottom-4">
       <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center">
         <div className="flex items-center gap-4">
-          <button onClick={onBack} className="w-10 h-10 flex items-center justify-center bg-slate-50 border rounded-xl text-slate-400 hover:text-blue-600 transition-all">
+          <button onClick={onBack} className="w-10 h-10 flex items-center justify-center bg-slate-50 border rounded-xl text-slate-400 hover:text-blue-600 transition-all shadow-sm">
             <i className="fas fa-arrow-left"></i>
           </button>
           <div>

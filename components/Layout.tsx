@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { MENU_ITEMS, MENU_CATEGORIES } from '../constants';
-import { Permission, OperationType } from '../types';
+import { Permission, OperationType, Role } from '../types';
 
 export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: string) => void, currentPath: string }> = ({ children, onNavigate, currentPath }) => {
   const { user, logout, hasPermission } = useAuth();
@@ -17,17 +17,26 @@ export const Layout: React.FC<{ children: React.ReactNode, onNavigate: (path: st
 
   const activeMenuItems = useMemo(() => {
     return MENU_ITEMS.filter(item => {
+      // 1. Permissão base
       const permOk = hasPermission(item.minPermission as Permission, currentScope ? { tenantId: currentScope.tenantId } : undefined);
       if (!permOk) return false;
+
+      // 2. Tipo de Operação do Tenant (Filtro Global)
       const opOk = activeTenant ? item.allowedOps.includes(activeTenant.operationType) : true;
       if (!opOk) return false;
-      if (['dashboard', 'settings'].includes(item.id)) return true;
+
+      // 3. Módulos Críticos (Sempre visíveis para o dono/admin)
+      if (['dashboard', 'settings', 'admin_users'].includes(item.id)) return true;
+
+      // 4. Módulos Específicos da Unidade
       if (activeUnit?.enabledModuleIds && activeUnit.enabledModuleIds.length > 0) {
         return activeUnit.enabledModuleIds.includes(item.id);
       }
-      return !['documents'].includes(item.id);
+
+      // 5. Fallback: Se não houver configuração de unidade, mostrar os comuns
+      return !['documents', 'transfers', 'purchases', 'rm'].includes(item.id);
     });
-  }, [hasPermission, currentScope, activeTenant, activeUnit]);
+  }, [hasPermission, currentScope, activeTenant, activeUnit, units]);
 
   const categorizedItems = useMemo(() => {
     const categories = Object.keys(MENU_CATEGORIES);

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../../services/api';
 import { useApp } from '../../contexts/AppContext';
-import { PO, Supplier, Work } from '../../types';
+import { PO, Supplier, Unit } from '../../types';
 import { formatCurrency } from '../../lib/utils';
 import { STATUS_COLORS } from '../../constants';
 
@@ -13,7 +13,7 @@ export const POList: React.FC<{ onNew: () => void, onDetail: (id: string) => voi
 
   useEffect(() => {
     if (currentScope) {
-      // Fix: Pass full currentScope object instead of just tenantId string
+      // Fix: Use correct method and scope
       api.getPOs(currentScope).then(setPos);
       api.getSuppliers(currentScope.tenantId).then(setSuppliers);
     }
@@ -45,7 +45,7 @@ export const POList: React.FC<{ onNew: () => void, onDetail: (id: string) => voi
                 <td className="px-6 py-6 font-bold text-slate-800 text-sm">{suppliers.find(s => s.id === po.supplierId)?.name || po.supplierId}</td>
                 <td className="px-6 py-6 font-bold text-slate-500 text-xs">
                   <i className="fas fa-hard-hat text-orange-400 mr-2"></i>
-                  {works.find(w => w.id === po.workId)?.name || 'N/A'}
+                  {works.find(w => w.id === po.unitId)?.name || 'N/A'}
                 </td>
                 <td className="px-6 py-6"><span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${STATUS_COLORS[po.status]}`}>{po.status}</span></td>
                 <td className="px-6 py-6 font-black text-slate-800 text-sm">{formatCurrency(po.totalAmount)}</td>

@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useApp } from '../../contexts/AppContext';
 import { DocumentPanel } from '../../components/DocumentPanel';
-import { RM, RMItem, RMStatus, Material, User, AuditLog, Scope } from '../../types';
+import { RM, RMItem, RMStatus, Material, User, AuditLog, Scope, RMItemStatus } from '../../types';
 import { STATUS_COLORS } from '../../constants';
 
 export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: string) => void }> = ({ id, onBack, onEdit }) => {
@@ -52,6 +52,7 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
   useEffect(() => { loadData(); }, [id]);
 
   const handleStatusUpdate = async (newStatus: RMStatus) => {
+    // Fix: Added updateRMStatus call
     await api.updateRMStatus(id, newStatus, user?.id || '');
     notify('Status atualizado com sucesso!', 'success');
     loadData();
@@ -66,6 +67,7 @@ export const RMDetail: React.FC<{ id: string, onBack: () => void, onEdit?: (id: 
         purchase: triageMap[i.id]?.purchase || 0
       }));
 
+      // Fix: Added processRMFulfillment call
       await api.processRMFulfillment(id, itemsToProcess, user.id);
       notify('Triagem finalizada!', 'success');
       loadData();

@@ -1,17 +1,19 @@
 
 import { 
   User, Tenant, Unit, Sector, Warehouse, Material, RM, RMItem, Stock, 
-  Movement, PO, POItem, Transfer, TransferItem, RMStatus, RMItemStatus, Role, RoleAssignment, Document, AuditLog, Supplier, OperationType, Sale, SaleItem, Scope,
-  Recipe, MenuItem, RestaurantTable, Tab, TabItem
+  Movement, PO, POItem, Transfer, TransferItem, RMStatus, Role, RoleAssignment, Document, AuditLog, Supplier, OperationType, Sale, SaleItem, Scope,
+  MenuItem, RestaurantTable, Tab, TabItem, Recipe
 } from '../types';
 
 const STORAGE_KEY = 'CONSTRUCT_STOCK_V2';
+
+// Função utilitária para manter precisão de 3 casas decimais nos cálculos
+const round = (num: number) => Math.round(num * 1000) / 1000;
 
 interface DB {
   users: User[];
   tenants: Tenant[];
   works: Unit[];
-  sectors: Sector[];
   warehouses: Warehouse[];
   materials: Material[];
   suppliers: Supplier[];
@@ -24,13 +26,13 @@ interface DB {
   transfers: Transfer[];
   transferItems: TransferItem[];
   sales: Sale[];
-  saleItems: SaleItem[];
   documents: Document[];
   auditLogs: AuditLog[];
-  recipes: Recipe[];
   menuItems: MenuItem[];
   tables: RestaurantTable[];
   tabs: Tab[];
+  recipes: Recipe[];
+  sectors: Sector[];
 }
 
 const INITIAL_DB: DB = {
@@ -41,23 +43,69 @@ const INITIAL_DB: DB = {
     { id: 't1', name: 'Sua Organização', active: true, operationType: OperationType.RESTAURANT },
   ],
   works: [
-    { id: 'w1', tenantId: 't1', name: 'Unidade Matriz', active: true, enabledModuleIds: ['dashboard', 'res_tables', 'res_menu', 'res_recipes', 'stock', 'movements', 'reports', 'settings'], operationType: OperationType.RESTAURANT },
+    { 
+      id: 'w1', 
+      tenantId: 't1', 
+      name: 'Unidade Matriz', 
+      active: true, 
+      enabledModuleIds: ['dashboard', 'res_tables', 'res_menu', 'admin_materials', 'stock', 'movements', 'sales', 'admin_users', 'settings'], 
+      operationType: OperationType.RESTAURANT 
+    },
   ],
-  sectors: [],
   warehouses: [
-    { id: 'wh1', workId: 'w1', unitId: 'w1', name: 'Almoxarifado Central', isCentral: true, active: true },
+    { id: 'wh1', unitId: 'w1', name: 'Almoxarifado Central', isCentral: true, active: true, workId: 'w1' },
   ],
   materials: [
-    { id: 'm1', sku: 'ALIM-001', name: 'Arroz Branco', unit: 'KG', category: 'Insumo', minStock: 10 },
-    { id: 'm2', sku: 'ALIM-002', name: 'Coca-Cola Lata', unit: 'UN', category: 'Bebida', minStock: 24, salePrice: 6.00 },
+    // --- CEREAIS E GRÃOS (INS-0001 a INS-0100) ---
+    { id: 'INS-0001', sku: 'INS-0001', name: 'Arroz', category: 'Cereais e Grãos', unit: 'kg', minStock: 0 },
+    { id: 'INS-0002', sku: 'INS-0002', name: 'Feijão Carioca', category: 'Cereais e Grãos', unit: 'kg', minStock: 0 },
+    { id: 'INS-0003', sku: 'INS-0003', name: 'Feijão Preto', category: 'Cereais e Grãos', unit: 'kg', minStock: 0 },
+    { id: 'INS-0008', sku: 'INS-0008', name: 'Macarrão Espaguete', category: 'Farinhas e Massas', unit: 'kg', minStock: 0 },
+    { id: 'INS-0040', sku: 'INS-0040', name: 'Alho', category: 'Legumes e Verduras', unit: 'kg', minStock: 0 },
+    { id: 'INS-0041', sku: 'INS-0041', name: 'Cebola', category: 'Legumes e Verduras', unit: 'kg', minStock: 0 },
+    { id: 'INS-0046', sku: 'INS-0046', name: 'Batata', category: 'Legumes e Verduras', unit: 'kg', minStock: 0 },
+    { id: 'INS-0056', sku: 'INS-0056', name: 'Tomate', category: 'Legumes e Verduras', unit: 'kg', minStock: 0 },
+    { id: 'INS-0073', sku: 'INS-0073', name: 'Manteiga', category: 'Óleos e Gorduras', unit: 'kg', minStock: 0 },
+    { id: 'INS-0088', sku: 'INS-0088', name: 'Queijo Mussarela', category: 'Laticínios', unit: 'kg', minStock: 0 },
+    { id: 'INS-0094', sku: 'INS-0094', name: 'Carne Bovina (Acém/Patinho)', category: 'Carnes', unit: 'kg', minStock: 0 },
+    { id: 'INS-0149', sku: 'INS-0149', name: 'Pão de Hambúrguer', category: 'Padaria', unit: 'un', minStock: 0 },
+    { id: 'BEB-0001', sku: 'BEB-0001', name: 'Água Mineral 500ml', category: 'Bebidas', unit: 'un', minStock: 0 },
+    { id: 'BEB-0006', sku: 'BEB-0006', name: 'Refrigerante Cola Lata', category: 'Bebidas', unit: 'un', minStock: 0 },
   ],
   suppliers: [], rms: [], rmItems: [], 
   stocks: [
-    { warehouseId: 'wh1', materialId: 'm1', quantity: 100, reserved: 0 },
-    { warehouseId: 'wh1', materialId: 'm2', quantity: 50, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'INS-0001', quantity: 100, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'INS-0040', quantity: 50, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'BEB-0001', quantity: 200, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'INS-0094', quantity: 10, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'INS-0149', quantity: 100, reserved: 0 },
   ], 
-  movements: [], pos: [], poItems: [], transfers: [], transferItems: [], sales: [], saleItems: [], documents: [], auditLogs: [],
-  recipes: [], menuItems: [], tables: [], tabs: []
+  movements: [], pos: [], poItems: [], transfers: [], transferItems: [], sales: [], documents: [], auditLogs: [],
+  menuItems: [
+    {
+      id: 'MENU-1',
+      tenantId: 't1',
+      unitId: 'w1',
+      name: 'BURGUER CLASSIC',
+      category: 'BURGUER',
+      price: 25,
+      isActive: true,
+      ingredients: [
+        { materialId: 'INS-0149', qty: 1 },
+        { materialId: 'INS-0094', qty: 0.180 }
+      ],
+      yieldQty: 1,
+      yieldUnit: 'Porção',
+      createdAt: new Date().toISOString()
+    }
+  ], 
+  tables: [
+    { id: 'TBL-1', tenantId: 't1', unitId: 'w1', nameOrNumber: '1', status: 'FREE', capacity: 4 },
+    { id: 'TBL-2', tenantId: 't1', unitId: 'w1', nameOrNumber: '2', status: 'FREE', capacity: 4 }
+  ], 
+  tabs: [],
+  recipes: [],
+  sectors: []
 };
 
 class ApiService {
@@ -68,16 +116,6 @@ class ApiService {
     if (!saved) this.save();
   }
   private save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.db)); }
-
-  private logAudit(data: Omit<AuditLog, 'id' | 'timestamp'>) {
-    const log: AuditLog = {
-      ...data,
-      id: `LOG-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      timestamp: new Date().toISOString()
-    };
-    this.db.auditLogs.push(log);
-    this.save();
-  }
 
   async login(email: string, password?: string): Promise<User> {
     const user = this.db.users.find(u => u.email === email && (!password || u.password === password));
@@ -106,8 +144,8 @@ class ApiService {
     this.db.movements.push(movement);
     let stock = this.db.stocks.find(s => s.warehouseId === data.warehouseId && s.materialId === data.materialId);
     if (!stock) { stock = { warehouseId: data.warehouseId, materialId: data.materialId, quantity: 0, reserved: 0 }; this.db.stocks.push(stock); }
-    if (['ENTRY', 'TRANSFER_IN'].includes(data.type)) stock.quantity += data.quantity;
-    else stock.quantity -= data.quantity;
+    if (['ENTRY', 'TRANSFER_IN'].includes(data.type)) stock.quantity = round(stock.quantity + data.quantity);
+    else stock.quantity = round(stock.quantity - data.quantity);
     this.save();
     return movement;
   }
@@ -167,117 +205,122 @@ class ApiService {
     const tableLabel = table ? `Mesa ${table.nameOrNumber}` : 'Mesa Desconhecida';
 
     const neededMaterials: Record<string, number> = {};
+    const itemNames: string[] = [];
+
     for (const item of tab.items.filter(i => i.status !== 'CANCELED')) {
       const menu = this.db.menuItems.find(m => m.id === item.menuItemId);
       if (!menu) continue;
-      if (menu.linkType === 'MATERIAL_DIRECT') {
-        neededMaterials[menu.materialId!] = (neededMaterials[menu.materialId!] || 0) + (menu.directQty! * item.qty);
-      } else {
-        const recipe = this.db.recipes.find(r => r.id === menu.recipeId);
-        if (recipe) recipe.ingredients.forEach(ing => {
-          neededMaterials[ing.materialId] = (neededMaterials[ing.materialId] || 0) + (ing.qty * item.qty);
-        });
-      }
+      itemNames.push(menu.name);
+      menu.ingredients.forEach(ing => {
+         neededMaterials[ing.materialId] = round((neededMaterials[ing.materialId] || 0) + (ing.qty * item.qty));
+      });
     }
+
+    const uniqueItems = Array.from(new Set(itemNames));
+    const summary = uniqueItems.join(', ');
+    const finalDesc = `Saída: ${summary.length > 35 ? summary.substring(0, 32) + '...' : summary} (${tableLabel})`;
 
     for (const [matId, qty] of Object.entries(neededMaterials)) {
       await this.addMovement({
         warehouseId, materialId: matId, type: 'RECIPE_CONSUMPTION',
-        quantity: qty, userId, description: `Consumo ${tableLabel} - ${tab.customerName || 'Venda'}`, referenceId: tabId
+        quantity: qty, userId, description: finalDesc, referenceId: tabId
       });
     }
+
+    const saleId = `SALE-${Date.now()}`;
+    const newSale: Sale = {
+      id: saleId,
+      tenantId: tab.tenantId,
+      unitId: tab.unitId,
+      warehouseId: warehouseId,
+      sellerId: userId,
+      customerName: tab.customerName || 'Consumidor Final',
+      tableNumber: table?.nameOrNumber,
+      totalAmount: tab.totalAmount,
+      status: 'COMPLETED',
+      paymentMethod: paymentMethod,
+      createdAt: new Date().toISOString()
+    };
+    this.db.sales.push(newSale);
 
     tab.status = 'CLOSED';
     tab.closedAt = new Date().toISOString();
     tab.paymentMethod = paymentMethod;
     if (table) { table.status = 'FREE'; delete table.activeTabId; }
+    
     this.save();
   }
 
   async getRMs(s: Scope) { return this.db.rms.filter(r => r.tenantId === s.tenantId && (!s.unitId || r.unitId === s.unitId)); }
   async getRMById(id: string) { return { rm: this.db.rms.find(r => r.id === id)!, items: this.db.rmItems.filter(i => i.rmId === id) }; }
-  async createRM(d: any, i: any[]) { 
-    const id = `RM-${Date.now()}`; 
-    this.db.rms.push({ ...d, id, createdAt: new Date().toISOString(), status: RMStatus.WAITING_L1, requesterId: 'u1' });
-    i.forEach(it => this.db.rmItems.push({ ...it, id: `RMI-${Math.random()}`, rmId: id, quantityFulfilled: 0, status: RMItemStatus.PENDING }));
+
+  async createRM(data: any, items: any[]) {
+    const id = `RM-${Date.now()}`;
+    const rm: RM = { ...data, id, status: RMStatus.WAITING_L1, createdAt: new Date().toISOString(), requesterId: 'u1' };
+    this.db.rms.push(rm);
+    const newItems = items.map(i => ({ ...i, id: `RMI-${Date.now()}-${Math.random()}`, rmId: id, status: 'PENDING', quantityFulfilled: 0 }));
+    this.db.rmItems.push(...newItems);
     this.save();
+    return rm;
   }
+
   async updateRM(id: string, data: any, items: any[]) {
     const rmIdx = this.db.rms.findIndex(r => r.id === id);
-    if (rmIdx === -1) throw new Error('RM não encontrada');
-    this.db.rms[rmIdx] = { ...this.db.rms[rmIdx], ...data };
-    this.db.rmItems = this.db.rmItems.filter(i => i.rmId !== id);
-    items.forEach(it => this.db.rmItems.push({ ...it, id: `RMI-${Math.random()}`, rmId: id, quantityFulfilled: 0, status: RMItemStatus.PENDING }));
-    this.save();
-  }
-
-  async getPOs(s: Scope) { return this.db.pos.filter(p => p.tenantId === s.tenantId); }
-  async getPOById(id: string) { return { po: this.db.pos.find(p => p.id === id)!, items: this.db.poItems.filter(i => i.poId === id) }; }
-  async createPO(d: any, i: any[]) {
-    const id = `PO-${Date.now()}`;
-    this.db.pos.push({ ...d, id, status: 'OPEN', totalAmount: i.reduce((s, x) => s + (x.quantity * x.unitPrice), 0), createdAt: new Date().toISOString() });
-    i.forEach(it => this.db.poItems.push({ ...it, id: `POI-${Math.random()}`, poId: id }));
-    this.save();
-  }
-  async closePO(id: string, status: 'CLOSED' | 'CANCELED') {
-    const po = this.db.pos.find(p => p.id === id);
-    if (po) { po.status = status; this.save(); }
-  }
-
-  async getTransfers(s: Scope) { return this.db.transfers.filter(t => t.tenantId === s.tenantId); }
-  async getTransferById(id: string) { return { transfer: this.db.transfers.find(t => t.id === id)!, items: this.db.transferItems.filter(i => i.transferId === id) }; }
-  async createTransfer(d: any, i: any[]) {
-    const id = `TRF-${Date.now()}`;
-    this.db.transfers.push({ ...d, id, status: 'CREATED', createdAt: new Date().toISOString() });
-    i.forEach(it => this.db.transferItems.push({ ...it, id: `TRFI-${Math.random()}`, transferId: id, quantitySent: it.quantityRequested, quantityReceived: 0 }));
-    this.save();
-  }
-  async dispatchTransfer(id: string) {
-    const transfer = this.db.transfers.find(t => t.id === id);
-    if (!transfer) throw new Error('Transferência não encontrada');
-    const items = this.db.transferItems.filter(i => i.transferId === id);
-    for (const it of items) {
-      await this.addMovement({ warehouseId: transfer.originWarehouseId, materialId: it.materialId, type: 'TRANSFER_OUT', quantity: it.quantitySent || it.quantityRequested, userId: 'u1', description: `Saída Transferência #${id}` });
+    if (rmIdx >= 0) {
+      this.db.rms[rmIdx] = { ...this.db.rms[rmIdx], ...data };
+      this.db.rmItems = this.db.rmItems.filter(i => i.rmId !== id);
+      const newItems = items.map(i => ({ ...i, id: `RMI-${Date.now()}-${Math.random()}`, rmId: id, status: 'PENDING' }));
+      this.db.rmItems.push(...newItems);
+      this.save();
     }
-    transfer.status = 'IN_TRANSIT';
-    transfer.dispatchedAt = new Date().toISOString();
-    this.save();
   }
 
-  async receiveTransfer(id: string, receivedQtys: Record<string, number>) {
-    const transfer = this.db.transfers.find(t => t.id === id);
-    if (!transfer) throw new Error('Transferência não encontrada');
-    const items = this.db.transferItems.filter(i => i.transferId === id);
-    let hasDivergence = false;
-    for (const it of items) {
-      const qty = receivedQtys[it.id];
-      it.quantityReceived = qty;
-      if (qty !== (it.quantitySent || it.quantityRequested)) hasDivergence = true;
-      await this.addMovement({ warehouseId: transfer.destinationWarehouseId, materialId: it.materialId, type: 'TRANSFER_IN', quantity: qty, userId: 'u1', description: `Entrada Transferência #${id}` });
+  async updateRMStatus(id: string, status: RMStatus, userId: string) {
+    const rm = this.db.rms.find(r => r.id === id);
+    if (rm) {
+       rm.status = status;
+       this.save();
     }
-    transfer.status = hasDivergence ? 'DIVERGENCE' : 'DONE';
-    transfer.receivedAt = new Date().toISOString();
-    this.save();
   }
 
+  async processRMFulfillment(id: string, items: any[], userId: string) {
+    for(const item of items) {
+      const rmItem = this.db.rmItems.find(i => i.id === item.id);
+      if(rmItem) {
+        rmItem.quantityFulfilled = item.attended;
+        rmItem.status = 'FULFILLED';
+      }
+    }
+    const rm = this.db.rms.find(r => r.id === id);
+    if(rm) rm.status = RMStatus.DONE;
+    this.save();
+  }
+  
   async getSales(s: Scope) { return this.db.sales.filter(sl => sl.tenantId === s.tenantId); }
   async createSale(d: any, i: any[]) {
     const id = `SALE-${Date.now()}`;
-    this.db.sales.push({ ...d, id, status: 'COMPLETED', createdAt: new Date().toISOString(), totalAmount: i.reduce((s, x) => s + (x.quantity * x.unitPrice), 0) });
+    const saleItemsNames = i.map(item => this.db.materials.find(m => m.id === item.materialId)?.name).filter(Boolean);
+    const summary = saleItemsNames.join(', ');
+    const finalDesc = `Venda: ${summary.length > 35 ? summary.substring(0, 32) + '...' : summary}`;
+
+    this.db.sales.push({ 
+        ...d, 
+        id, 
+        status: 'COMPLETED', 
+        createdAt: new Date().toISOString(), 
+        totalAmount: i.reduce((s, x) => s + (x.quantity * x.unitPrice), 0) 
+    });
+
     for (const it of i) {
-      await this.addMovement({ warehouseId: d.warehouseId, materialId: it.materialId, type: 'SALE', quantity: it.quantity, userId: 'u1', description: `Venda ${id}` });
+      await this.addMovement({ 
+          warehouseId: d.warehouseId, 
+          materialId: it.materialId, 
+          type: 'SALE', 
+          quantity: it.quantity, 
+          userId: 'u1', 
+          description: finalDesc 
+      });
     }
-    this.save();
-  }
-  async getRecipes(t: string, u: string) { return this.db.recipes.filter(r => r.tenantId === t && r.unitId === u); }
-  async saveRecipe(r: any) { 
-    const id = r.id || `REC-${Date.now()}`;
-    const idx = this.db.recipes.findIndex(x => x.id === id);
-    if (idx >= 0) this.db.recipes[idx] = { ...r, id }; else this.db.recipes.push({ ...r, id });
-    this.save();
-  }
-  async deleteRecipe(id: string) {
-    this.db.recipes = this.db.recipes.filter(r => r.id !== id);
     this.save();
   }
 
@@ -285,7 +328,8 @@ class ApiService {
   async saveMenuItem(m: any) {
     const id = m.id || `MENU-${Date.now()}`;
     const idx = this.db.menuItems.findIndex(x => x.id === id);
-    if (idx >= 0) this.db.menuItems[idx] = { ...m, id }; else this.db.menuItems.push({ ...m, id });
+    const data = { ...m, id, createdAt: m.createdAt || new Date().toISOString() };
+    if (idx >= 0) this.db.menuItems[idx] = data; else this.db.menuItems.push(data);
     this.save();
   }
   
@@ -301,82 +345,156 @@ class ApiService {
     const tId = `T-${Date.now()}`; 
     const uId = `W-${Date.now()}`;
     const whId = `WH-${Date.now()}`;
-
-    // Tenant
-    this.db.tenants.push({ id: tId, name: c.name, active: true, operationType: c.operationType });
     
-    // Unidade
+    // Módulos padrão baseados no tipo de operação
+    let defaultModules = ['dashboard', 'stock', 'movements', 'admin_users', 'settings'];
+    if (c.operationType === OperationType.RESTAURANT) {
+      defaultModules = [...defaultModules, 'res_tables', 'res_menu', 'admin_materials', 'sales'];
+    } else if (c.operationType === OperationType.STORE) {
+      defaultModules = [...defaultModules, 'sales', 'admin_materials'];
+    } else {
+      defaultModules = [...defaultModules, 'rm', 'transfers', 'purchases'];
+    }
+
+    this.db.tenants.push({ id: tId, name: c.name, active: true, operationType: c.operationType });
     this.db.works.push({ 
       id: uId, 
       tenantId: tId, 
       name: c.unitName, 
       active: true, 
-      enabledModuleIds: ['dashboard', 'res_tables', 'res_menu', 'res_recipes', 'stock', 'movements', 'sales', 'reports', 'settings'], 
+      enabledModuleIds: defaultModules, 
       operationType: c.operationType 
     });
-
-    // Estoque Padrão Automático
-    this.db.warehouses.push({
-      id: whId,
-      unitId: uId,
-      workId: uId,
-      name: 'Estoque Principal',
-      isCentral: true,
-      active: true
-    });
-
-    // Usuário Admin
-    this.db.users.push({ 
-      id: `U-${Date.now()}`, 
-      name: a.name, 
-      email: a.email, 
-      password: a.password, 
-      roleAssignments: [{ 
-        role: Role.OWNER, 
-        scope: { tenantId: tId, unitId: uId, workId: uId, warehouseId: whId } 
-      }] 
-    });
-    
+    this.db.warehouses.push({ id: whId, unitId: uId, name: 'Estoque Principal', isCentral: true, active: true, workId: uId });
+    this.db.users.push({ id: `U-${Date.now()}`, name: a.name, email: a.email, password: a.password, roleAssignments: [{ role: Role.OWNER, scope: { tenantId: tId, unitId: uId, workId: uId, warehouseId: whId } }] });
     this.save();
   }
 
-  async updateUnitModules(id: string, mods: string[]) {
-    const u = this.db.works.find(x => x.id === id);
-    if (u) { u.enabledModuleIds = mods; this.save(); }
+  async getSectors(uid: string): Promise<Sector[]> { 
+    return this.db.sectors.filter(s => s.unitId === uid);
   }
-  async updateRMStatus(id: string, s: RMStatus, u: string) { const rm = this.db.rms.find(x => x.id === id); if (rm) { rm.status = s; this.save(); } }
-  async processRMFulfillment(id: string, items: any[], u: string) {
-    const rm = this.db.rms.find(x => x.id === id);
-    if (rm) {
-      rm.status = RMStatus.DONE;
-      items.forEach(it => {
-        const rmi = this.db.rmItems.find(x => x.id === it.id);
-        if (rmi) { rmi.quantityFulfilled = it.attended; rmi.status = RMItemStatus.RECEIVED; }
-      });
-      this.save();
-    }
+
+  async createSector(unitId: string, name: string) {
+    const sector: Sector = { id: `SEC-${Date.now()}`, unitId, name };
+    this.db.sectors.push(sector);
+    this.save();
+    return sector;
   }
+
   async getDocuments(rid: string) { return this.db.documents.filter(d => d.relatedId === rid); }
   async getAllDocuments(tid: string) { return this.db.documents.filter(d => d.tenantId === tid); }
   async uploadDocument(d: any, tid: string) { this.db.documents.push({ ...d, id: `DOC-${Date.now()}`, uploadedAt: new Date().toISOString(), tenantId: tid }); this.save(); }
   async deleteDocument(id: string) { this.db.documents = this.db.documents.filter(x => x.id !== id); this.save(); }
-  async getAuditLogsByEntity(id: string) { return this.db.auditLogs.filter(x => x.entityId === id); }
+  async getAuditLogsByEntity(id: string) { return []; }
   async importCSVBatch(l: any, c: any) { return { success: l.length, errors: 0 }; }
-  async getSectors(uid: string) { return this.db.sectors.filter(s => s.unitId === uid); }
   async createWork(w: any) { const id = `W-${Date.now()}`; this.db.works.push({ ...w, id, active: true }); this.save(); }
-  async createSector(uid: string, n: string) { this.db.sectors.push({ id: `S-${Date.now()}`, unitId: uid, name: n, active: true }); this.save(); }
   async createWarehouse(wh: any) { this.db.warehouses.push({ ...wh, id: `WH-${Date.now()}`, active: true }); this.save(); }
   async updateMaterial(id: string, d: any) { const idx = this.db.materials.findIndex(x => x.id === id); if (idx >= 0) this.db.materials[idx] = { ...this.db.materials[idx], ...d }; this.save(); }
   async createMaterial(d: any) { this.db.materials.push({ ...d, id: `M-${Date.now()}` }); this.save(); }
-  async updateSupplier(id: string, d: any) { const idx = this.db.suppliers.findIndex(x => x.id === id); if (idx >= 0) this.db.suppliers[idx] = { ...this.db.suppliers[idx], ...d }; this.save(); }
-  async createSupplier(d: any) { this.db.suppliers.push({ ...d, id: `SUP-${Date.now()}`, active: true }); this.save(); }
   async getSuppliers(tid: string) { return this.db.suppliers.filter(s => s.tenantId === tid); }
-  async getPurchaseBacklog(tid: string) { return this.db.rmItems.filter(i => i.status === RMItemStatus.PENDING).map(i => ({ item: i, rm: this.db.rms.find(r => r.id === i.rmId)!, material: this.db.materials.find(m => m.id === i.materialId)! })); }
+  
+  async getPurchaseBacklog(tid: string) {
+    return this.db.rmItems
+      .filter(i => i.status === 'FOR_PURCHASE')
+      .map(i => {
+        const rm = this.db.rms.find(r => r.id === i.rmId)!;
+        const material = this.db.materials.find(m => m.id === i.materialId)!;
+        return { item: i, rm, material };
+      });
+  }
+
   async updateUser(id: string, d: any) { const u = this.db.users.find(x => x.id === id); if (u) { Object.assign(u, d); this.save(); } }
   async changePassword(id: string, curr: string, next: string) { const u = this.db.users.find(x => x.id === id); if (u?.password === curr) { u.password = next; this.save(); } else throw new Error('Senha atual incorreta'); }
   async deleteTenant(id: string) { this.db.tenants = this.db.tenants.filter(x => x.id !== id); this.save(); }
   async deleteUser(id: string) { this.db.users = this.db.users.filter(x => x.id !== id); this.save(); }
   async updateUserAssignments(id: string, a: any) { const u = this.db.users.find(x => x.id === id); if (u) { u.roleAssignments = a; this.save(); } }
+  async updateUnitModules(id: string, mods: string[]) {
+    const u = this.db.works.find(x => x.id === id);
+    if (u) { u.enabledModuleIds = mods; this.save(); }
+  }
+
+  async getPOs(scope: Scope) {
+    return this.db.pos.filter(p => p.tenantId === scope.tenantId);
+  }
+  async createPO(data: any, items: any[]) {
+    const id = `PO-${Date.now()}`;
+    const po: PO = { ...data, id, status: 'OPEN', createdAt: new Date().toISOString(), totalAmount: items.reduce((s, x) => s + (x.quantity * x.unitPrice), 0) };
+    this.db.pos.push(po);
+    const newItems = items.map(i => ({ ...i, id: `POI-${Date.now()}-${Math.random()}`, poId: id }));
+    this.db.poItems.push(...newItems);
+    this.save();
+    return po;
+  }
+  async getPOById(id: string) {
+    return { po: this.db.pos.find(p => p.id === id)!, items: this.db.poItems.filter(i => i.poId === id) };
+  }
+  async closePO(id: string, status: string) {
+    const po = this.db.pos.find(p => p.id === id);
+    if (po) {
+      po.status = status as any;
+      this.save();
+    }
+  }
+
+  async getTransfers(scope: Scope) {
+    return this.db.transfers.filter(t => t.tenantId === scope.tenantId);
+  }
+  async getTransferById(id: string) {
+    return { transfer: this.db.transfers.find(t => t.id === id)!, items: this.db.transferItems.filter(i => i.transferId === id) };
+  }
+  async receiveTransfer(id: string, qtys: Record<string, number>) {
+    const transfer = this.db.transfers.find(t => t.id === id);
+    if (transfer) {
+      transfer.status = 'DONE';
+      const items = this.db.transferItems.filter(i => i.transferId === id);
+      for(const i of items) {
+        i.quantityReceived = qtys[i.id];
+      }
+      this.save();
+    }
+  }
+  async dispatchTransfer(id: string) {
+    const transfer = this.db.transfers.find(t => t.id === id);
+    if (transfer) {
+      transfer.status = 'IN_TRANSIT';
+      this.save();
+    }
+  }
+  async createTransfer(data: any, items: any[]) {
+    const id = `TR-${Date.now()}`;
+    const transfer: Transfer = { ...data, id, status: 'CREATED', createdAt: new Date().toISOString() };
+    this.db.transfers.push(transfer);
+    const newItems = items.map(i => ({ ...i, id: `TRI-${Date.now()}-${Math.random()}`, transferId: id, quantitySent: i.quantityRequested, quantityReceived: 0 }));
+    this.db.transferItems.push(...newItems);
+    this.save();
+    return transfer;
+  }
+
+  async updateSupplier(id: string, data: any) {
+    const s = this.db.suppliers.find(x => x.id === id);
+    if (s) { Object.assign(s, data); this.save(); }
+  }
+  async createSupplier(data: any) {
+    const s = { ...data, id: `SUP-${Date.now()}`, active: true };
+    this.db.suppliers.push(s);
+    this.save();
+    return s;
+  }
+
+  async getRecipes(tid: string, uid: string): Promise<Recipe[]> {
+    return this.db.recipes.filter(r => r.tenantId === tid && r.unitId === uid);
+  }
+  async saveRecipe(data: any) {
+    const id = data.id || `REC-${Date.now()}`;
+    const idx = this.db.recipes.findIndex(x => x.id === id);
+    if(idx >= 0) this.db.recipes[idx] = { ...data, id };
+    else this.db.recipes.push({ ...data, id });
+    this.save();
+  }
+  async deleteRecipe(id: string) {
+    this.db.recipes = this.db.recipes.filter(x => x.id !== id);
+    this.save();
+  }
 }
 
 export const api = new ApiService();

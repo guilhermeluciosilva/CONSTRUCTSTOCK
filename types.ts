@@ -2,8 +2,8 @@
 export enum Role {
   OWNER = 'OWNER',
   ADMIN = 'ADMIN',
-  MANAGER = 'MANAGER', // Unificado: Gerente de Loja, Restaurante ou Obra
-  OPERATOR = 'OPERATOR', // Unificado: Vendedor, Garçom ou Operador de Estoque
+  MANAGER = 'MANAGER',
+  OPERATOR = 'OPERATOR',
   REQUESTER = 'REQUESTER',
   WH_CENTRAL = 'WH_CENTRAL',
   PURCHASING = 'PURCHASING',
@@ -72,21 +72,27 @@ export interface Unit {
   operationType?: OperationType;
 }
 
+/**
+ * Added Sector interface to fix missing member error.
+ */
 export interface Sector {
   id: string;
   unitId: string;
   name: string;
-  active: boolean;
 }
 
+/**
+ * Added Warehouse interface to fix missing member error.
+ */
 export interface Warehouse {
   id: string;
   unitId: string;
-  sectorId?: string; 
   name: string;
   isCentral: boolean;
   active: boolean;
-  workId: string;
+  workId?: string;
+  // Added sectorId to fix Property 'sectorId' does not exist on type 'Warehouse' error.
+  sectorId?: string;
 }
 
 export interface Material {
@@ -99,12 +105,14 @@ export interface Material {
   salePrice?: number;
 }
 
-// RESTAURANTE ENTIDADES
 export interface RecipeIngredient {
   materialId: string;
   qty: number;
 }
 
+/**
+ * Added Recipe interface to fix missing member error.
+ */
 export interface Recipe {
   id: string;
   tenantId: string;
@@ -113,8 +121,6 @@ export interface Recipe {
   yieldQty: number;
   yieldUnit: string;
   ingredients: RecipeIngredient[];
-  notes?: string;
-  createdAt: string;
 }
 
 export interface MenuItem {
@@ -125,10 +131,12 @@ export interface MenuItem {
   category: string;
   price: number;
   isActive: boolean;
-  linkType: 'RECIPE' | 'MATERIAL_DIRECT';
-  recipeId?: string;
-  materialId?: string;
-  directQty?: number;
+  // Ficha Técnica acoplada
+  ingredients: RecipeIngredient[];
+  yieldQty: number;
+  yieldUnit: string;
+  notes?: string;
+  createdAt: string;
 }
 
 export interface RestaurantTable {
@@ -180,17 +188,33 @@ export interface Movement {
 }
 
 export enum RMStatus { DRAFT = 'DRAFT', WAITING_L1 = 'WAITING_L1', WAITING_L2 = 'WAITING_L2', APPROVED = 'APPROVED', IN_FULFILLMENT = 'IN_FULFILLMENT', IN_TRANSIT = 'IN_TRANSIT', PARTIAL_RECEIVED = 'PARTIAL_RECEIVED', DONE = 'DONE', CANCELED = 'CANCELED' }
-export enum RMItemStatus { PENDING = 'PENDING', FROM_STOCK = 'FROM_STOCK', FOR_PURCHASE = 'FOR_PURCHASE', SEPARATION = 'SEPARATION', IN_TRANSIT = 'IN_TRANSIT', RECEIVED_PARTIAL = 'RECEIVED_PARTIAL', RECEIVED = 'RECEIVED', CANCELED = 'CANCELED' }
+
+/**
+ * Added RMItemStatus type to fix missing member error.
+ */
+export type RMItemStatus = 'PENDING' | 'FULFILLED' | 'FOR_PURCHASE' | 'CANCELED';
+
 export interface RM { id: string; requesterId: string; tenantId: string; unitId: string; warehouseId: string; dateRequired: string; priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'; status: RMStatus; observations: string; createdAt: string; workId: string; }
+
+// Updated RMItem to use RMItemStatus
 export interface RMItem { id: string; rmId: string; materialId: string; quantityRequested: number; quantityFulfilled: number; estimatedPrice: number; status: RMItemStatus; observations?: string; }
 export interface Stock { warehouseId: string; materialId: string; quantity: number; reserved: number; }
-export interface Sale { id: string; tenantId: string; unitId: string; warehouseId: string; sellerId: string; customerName?: string; tableNumber?: string; totalAmount: number; status: 'COMPLETED' | 'CANCELED'; createdAt: string; }
-export interface SaleItem { id: string; saleId: string; materialId: string; quantity: number; unitPrice: number; }
+export interface Sale { id: string; tenantId: string; unitId: string; warehouseId: string; sellerId: string; customerName?: string; tableNumber?: string; totalAmount: number; status: 'COMPLETED' | 'CANCELED'; createdAt: string; paymentMethod?: 'CASH' | 'PIX' | 'CARD'; }
+
+/**
+ * Added SaleItem interface to fix missing member error.
+ */
+export interface SaleItem {
+  id: string;
+  materialId: string;
+  quantity: number;
+  unitPrice: number;
+}
+
 export interface PO { id: string; tenantId: string; unitId: string; supplierId: string; status: 'OPEN' | 'PARTIAL' | 'CLOSED' | 'CANCELED'; deliveryDate: string; totalAmount: number; createdAt: string; workId: string; }
 export interface POItem { id: string; poId: string; rmItemId: string; materialId: string; quantity: number; unitPrice: number; }
 export interface Supplier { id: string; tenantId: string; name: string; taxId: string; contactEmail: string; active: boolean; }
 export interface Transfer { id: string; tenantId: string; originWarehouseId: string; destinationWarehouseId: string; status: 'CREATED' | 'SEPARATED' | 'IN_TRANSIT' | 'RECEIVED' | 'DONE' | 'DIVERGENCE'; createdAt: string; dispatchedAt?: string; receivedAt?: string; rmId?: string; }
 export interface TransferItem { id: string; transferId: string; rmItemId?: string; materialId: string; quantityRequested: number; quantitySent: number; quantityReceived: number; }
 export interface Document { id: string; name: string; type: 'NF' | 'CQ' | 'GUIA' | 'CONTRACT' | 'BANK' | 'OTHER'; mimeType: string; size: number; relatedId: string; uploadedAt: string; base64?: string; tenantId: string; }
-export interface AuditLog { id: string; tenantId: string; entityId: string; entityType: 'RM' | 'TRANSFER' | 'PO' | 'STOCK' | 'USER' | 'MATERIAL' | 'ORG' | 'SALE' | 'TAB'; action: string; userId: string; userName: string; timestamp: string; details: string; }
-export type Work = Unit;
+export interface AuditLog { id: string; tenantId: string; entityId: string; entityType: string; action: string; userId: string; userName: string; timestamp: string; details: string; }
