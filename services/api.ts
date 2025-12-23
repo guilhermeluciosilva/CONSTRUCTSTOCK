@@ -48,7 +48,7 @@ const INITIAL_DB: DB = {
       tenantId: 't1', 
       name: 'Unidade Matriz', 
       active: true, 
-      enabledModuleIds: ['dashboard', 'res_tables', 'res_menu', 'admin_materials', 'stock', 'movements', 'sales', 'admin_users', 'settings'], 
+      enabledModuleIds: ['dashboard', 'res_tables', 'res_menu', 'res_insumos', 'stock', 'movements', 'sales', 'admin_users', 'settings'], 
       operationType: OperationType.RESTAURANT 
     },
   ],
@@ -56,29 +56,55 @@ const INITIAL_DB: DB = {
     { id: 'wh1', unitId: 'w1', name: 'Almoxarifado Central', isCentral: true, active: true, workId: 'w1' },
   ],
   materials: [
-    // --- CEREAIS E GRÃOS (INS-0001 a INS-0100) ---
-    { id: 'INS-0001', sku: 'INS-0001', name: 'Arroz', category: 'Cereais e Grãos', unit: 'kg', minStock: 0 },
-    { id: 'INS-0002', sku: 'INS-0002', name: 'Feijão Carioca', category: 'Cereais e Grãos', unit: 'kg', minStock: 0 },
-    { id: 'INS-0003', sku: 'INS-0003', name: 'Feijão Preto', category: 'Cereais e Grãos', unit: 'kg', minStock: 0 },
-    { id: 'INS-0008', sku: 'INS-0008', name: 'Macarrão Espaguete', category: 'Farinhas e Massas', unit: 'kg', minStock: 0 },
-    { id: 'INS-0040', sku: 'INS-0040', name: 'Alho', category: 'Legumes e Verduras', unit: 'kg', minStock: 0 },
-    { id: 'INS-0041', sku: 'INS-0041', name: 'Cebola', category: 'Legumes e Verduras', unit: 'kg', minStock: 0 },
-    { id: 'INS-0046', sku: 'INS-0046', name: 'Batata', category: 'Legumes e Verduras', unit: 'kg', minStock: 0 },
-    { id: 'INS-0056', sku: 'INS-0056', name: 'Tomate', category: 'Legumes e Verduras', unit: 'kg', minStock: 0 },
-    { id: 'INS-0073', sku: 'INS-0073', name: 'Manteiga', category: 'Óleos e Gorduras', unit: 'kg', minStock: 0 },
-    { id: 'INS-0088', sku: 'INS-0088', name: 'Queijo Mussarela', category: 'Laticínios', unit: 'kg', minStock: 0 },
-    { id: 'INS-0094', sku: 'INS-0094', name: 'Carne Bovina (Acém/Patinho)', category: 'Carnes', unit: 'kg', minStock: 0 },
-    { id: 'INS-0149', sku: 'INS-0149', name: 'Pão de Hambúrguer', category: 'Padaria', unit: 'un', minStock: 0 },
-    { id: 'BEB-0001', sku: 'BEB-0001', name: 'Água Mineral 500ml', category: 'Bebidas', unit: 'un', minStock: 0 },
-    { id: 'BEB-0006', sku: 'BEB-0006', name: 'Refrigerante Cola Lata', category: 'Bebidas', unit: 'un', minStock: 0 },
+    // --- INSUMOS DE COZINHA ---
+    { id: 'INS-0001', sku: 'INS-0001', name: 'Arroz Branco T1', category: 'Insumos (Cozinha)', unit: 'kg', minStock: 20 },
+    { id: 'INS-0002', sku: 'INS-0002', name: 'Feijão Carioca', category: 'Insumos (Cozinha)', unit: 'kg', minStock: 15 },
+    { id: 'INS-0003', sku: 'INS-0003', name: 'Óleo de Soja 900ml', category: 'Insumos (Cozinha)', unit: 'un', minStock: 10 },
+    { id: 'INS-0004', sku: 'INS-0004', name: 'Sal Refinado 1kg', category: 'Insumos (Cozinha)', unit: 'un', minStock: 5 },
+    { id: 'INS-0005', sku: 'INS-0005', name: 'Açúcar Cristal 1kg', category: 'Insumos (Cozinha)', unit: 'un', minStock: 5 },
+    { id: 'INS-0006', sku: 'INS-0006', name: 'Café em Pó 500g', category: 'Insumos (Cozinha)', unit: 'un', minStock: 4 },
+    { id: 'INS-0007', sku: 'INS-0007', name: 'Farinha de Trigo', category: 'Insumos (Cozinha)', unit: 'kg', minStock: 10 },
+    { id: 'INS-0008', sku: 'INS-0008', name: 'Macarrão Espaguete', category: 'Insumos (Cozinha)', unit: 'kg', minStock: 10 },
+    { id: 'INS-0009', sku: 'INS-0009', name: 'Molho de Tomate Sachê', category: 'Insumos (Cozinha)', unit: 'un', minStock: 20 },
+    { id: 'INS-0010', sku: 'INS-0010', name: 'Manteiga com Sal', category: 'Insumos (Cozinha)', unit: 'kg', minStock: 2 },
+
+    // --- PROTEÍNAS / CARNES ---
+    { id: 'PRT-0001', sku: 'PRT-0001', name: 'Peito de Frango', category: 'Proteínas / Carnes', unit: 'kg', minStock: 10 },
+    { id: 'PRT-0002', sku: 'PRT-0002', name: 'Carne Moída (Patinho)', category: 'Proteínas / Carnes', unit: 'kg', minStock: 8 },
+    { id: 'PRT-0003', sku: 'PRT-0003', name: 'Alcatra Bovina', category: 'Proteínas / Carnes', unit: 'kg', minStock: 15 },
+    { id: 'PRT-0004', sku: 'PRT-0004', name: 'Bacon Defumado', category: 'Proteínas / Carnes', unit: 'kg', minStock: 5 },
+    { id: 'PRT-0005', sku: 'PRT-0005', name: 'Ovos Brancos (Dúzia)', category: 'Proteínas / Carnes', unit: 'dz', minStock: 10 },
+
+    // --- HORTIFRUTI ---
+    { id: 'HRT-0001', sku: 'HRT-0001', name: 'Alho Processado', category: 'Hortifruti', unit: 'kg', minStock: 2 },
+    { id: 'HRT-0002', sku: 'HRT-0002', name: 'Cebola Branca', category: 'Hortifruti', unit: 'kg', minStock: 10 },
+    { id: 'HRT-0003', sku: 'HRT-0003', name: 'Batata Inglesa', category: 'Hortifruti', unit: 'kg', minStock: 20 },
+    { id: 'HRT-0004', sku: 'HRT-0004', name: 'Tomate Italiano', category: 'Hortifruti', unit: 'kg', minStock: 10 },
+    { id: 'HRT-0005', sku: 'HRT-0005', name: 'Alface Crespa', category: 'Hortifruti', unit: 'un', minStock: 15 },
+
+    // --- BEBIDAS ---
+    { id: 'BEB-0001', sku: 'BEB-0001', name: 'Água Mineral 500ml', category: 'Bebidas', unit: 'un', minStock: 48, salePrice: 4.5 },
+    { id: 'BEB-0002', sku: 'BEB-0002', name: 'Coca-Cola Lata 350ml', category: 'Bebidas', unit: 'un', minStock: 24, salePrice: 7.0 },
+    { id: 'BEB-0003', sku: 'BEB-0003', name: 'Guaraná Antarctica 350ml', category: 'Bebidas', unit: 'un', minStock: 24, salePrice: 6.5 },
+    { id: 'BEB-0004', sku: 'BEB-0004', name: 'Suco de Laranja 1L', category: 'Bebidas', unit: 'un', minStock: 10, salePrice: 12.0 },
+    { id: 'BEB-0005', sku: 'BEB-0005', name: 'Cerveja Heineken Long Neck', category: 'Bebidas', unit: 'un', minStock: 24, salePrice: 15.0 },
+
+    // --- PRODUTOS DE LIMPEZA ---
+    { id: 'LIM-0001', sku: 'LIM-0001', name: 'Detergente Neutro 500ml', category: 'Produtos de Limpeza', unit: 'un', minStock: 10 },
+    { id: 'LIM-0002', sku: 'LIM-0002', name: 'Desinfetante Pinho 2L', category: 'Produtos de Limpeza', unit: 'un', minStock: 4 },
+    { id: 'LIM-0003', sku: 'LIM-0003', name: 'Água Sanitária 2L', category: 'Produtos de Limpeza', unit: 'un', minStock: 4 },
+    { id: 'LIM-0004', sku: 'LIM-0004', name: 'Esponja de Louça', category: 'Produtos de Limpeza', unit: 'un', minStock: 12 },
+    { id: 'LIM-0005', sku: 'LIM-0005', name: 'Papel Toalha Interfolha', category: 'Produtos de Limpeza', unit: 'fdo', minStock: 2 },
+    { id: 'LIM-0006', sku: 'LIM-0006', name: 'Sabão Líquido Lavanderia', category: 'Produtos de Limpeza', unit: 'gl', minStock: 1 },
+    { id: 'LIM-0007', sku: 'LIM-0007', name: 'Álcool 70% 1L', category: 'Produtos de Limpeza', unit: 'un', minStock: 6 },
   ],
   suppliers: [], rms: [], rmItems: [], 
   stocks: [
-    { warehouseId: 'wh1', materialId: 'INS-0001', quantity: 100, reserved: 0 },
-    { warehouseId: 'wh1', materialId: 'INS-0040', quantity: 50, reserved: 0 },
-    { warehouseId: 'wh1', materialId: 'BEB-0001', quantity: 200, reserved: 0 },
-    { warehouseId: 'wh1', materialId: 'INS-0094', quantity: 10, reserved: 0 },
-    { warehouseId: 'wh1', materialId: 'INS-0149', quantity: 100, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'INS-0001', quantity: 50, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'BEB-0001', quantity: 100, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'BEB-0002', quantity: 48, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'LIM-0001', quantity: 20, reserved: 0 },
+    { warehouseId: 'wh1', materialId: 'PRT-0001', quantity: 15, reserved: 0 },
   ], 
   movements: [], pos: [], poItems: [], transfers: [], transferItems: [], sales: [], documents: [], auditLogs: [],
   menuItems: [
@@ -86,16 +112,17 @@ const INITIAL_DB: DB = {
       id: 'MENU-1',
       tenantId: 't1',
       unitId: 'w1',
-      name: 'BURGUER CLASSIC',
-      category: 'BURGUER',
-      price: 25,
+      name: 'EXECUTIVO DE FRANGO',
+      category: 'ALMOÇO',
+      price: 32.9,
       isActive: true,
       ingredients: [
-        { materialId: 'INS-0149', qty: 1 },
-        { materialId: 'INS-0094', qty: 0.180 }
+        { materialId: 'PRT-0001', qty: 0.200 },
+        { materialId: 'INS-0001', qty: 0.150 },
+        { materialId: 'INS-0002', qty: 0.100 }
       ],
       yieldQty: 1,
-      yieldUnit: 'Porção',
+      yieldUnit: 'Prato',
       createdAt: new Date().toISOString()
     }
   ], 
@@ -349,9 +376,9 @@ class ApiService {
     // Módulos padrão baseados no tipo de operação
     let defaultModules = ['dashboard', 'stock', 'movements', 'admin_users', 'settings'];
     if (c.operationType === OperationType.RESTAURANT) {
-      defaultModules = [...defaultModules, 'res_tables', 'res_menu', 'admin_materials', 'sales'];
+      defaultModules = [...defaultModules, 'res_tables', 'res_menu', 'res_insumos', 'sales'];
     } else if (c.operationType === OperationType.STORE) {
-      defaultModules = [...defaultModules, 'sales', 'admin_materials'];
+      defaultModules = [...defaultModules, 'sales', 'res_insumos'];
     } else {
       defaultModules = [...defaultModules, 'rm', 'transfers', 'purchases'];
     }

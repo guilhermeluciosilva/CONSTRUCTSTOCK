@@ -18,6 +18,7 @@ import { ReportCenter } from './pages/Common/ReportCenter';
 import { Tables } from './pages/Restaurant/Tables';
 import { Menu } from './pages/Restaurant/Menu';
 import { Recipes } from './pages/Restaurant/Recipes';
+import { Insumos } from './pages/Restaurant/Insumos';
 
 // VAREJO (STORE)
 import { SalesList } from './pages/Store/SalesList';
@@ -36,7 +37,6 @@ import { TransferDetail } from './pages/Construction/TransferDetail';
 
 // ADMINISTRAÇÃO
 import { UserManagement } from './pages/Admin/UserManagement';
-import { MaterialManagement } from './pages/Admin/MaterialManagement';
 import { OrgManagement } from './pages/Admin/OrgManagement';
 import { SupplierManagement } from './pages/Admin/SupplierManagement';
 import { OperationSettings } from './pages/Admin/OperationSettings';
@@ -50,7 +50,6 @@ const AppContent: React.FC = () => {
   const [currentPath, setCurrentPath] = useState('/dashboard');
   const [authView, setAuthView] = useState<AuthView>('landing');
   
-  // IDs Selecionados para Telas de Detalhe
   const [selectedRMId, setSelectedRMId] = useState<string | null>(null);
   const [selectedTransferId, setSelectedTransferId] = useState<string | null>(null);
   const [selectedPOId, setSelectedPOId] = useState<string | null>(null);
@@ -86,6 +85,7 @@ const AppContent: React.FC = () => {
       case '/restaurant/tables': return <Tables />;
       case '/restaurant/menu': return <Menu />;
       case '/restaurant/recipes': return <Recipes />;
+      case '/restaurant/insumos': return <Insumos />;
 
       // DOMÍNIO: OPERACIONAL (OBRA/FÁBRICA)
       case '/rm': return <RMList onDetail={(id) => { setSelectedRMId(id); setCurrentPath('/rm/detail'); }} onNew={() => setCurrentPath('/rm/new')} />;
@@ -108,7 +108,6 @@ const AppContent: React.FC = () => {
 
       // DOMÍNIO: ADMINISTRAÇÃO
       case '/admin/users': return <UserManagement />;
-      case '/admin/materials': return <MaterialManagement />;
       case '/admin/org': return <OrgManagement />;
       case '/admin/suppliers': return <SupplierManagement />;
       case '/admin/settings': return <OperationSettings />;

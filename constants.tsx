@@ -48,9 +48,6 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   ]
 };
 
-/**
- * Added ROLE_DESCRIPTIONS to fix missing member error.
- */
 export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   [Role.OWNER]: 'Acesso total e gestão financeira do tenant.',
   [Role.ADMIN]: 'Administração de usuários, estrutura e catálogos.',
@@ -62,9 +59,6 @@ export const ROLE_DESCRIPTIONS: Record<Role, string> = {
   [Role.VIEWER]: 'Apenas visualização de relatórios e dashboards.'
 };
 
-/**
- * Added PERMISSION_LABELS to fix missing member error.
- */
 export const PERMISSION_LABELS: Record<Permission, string> = {
   RM_VIEW: 'Ver Requisições',
   RM_CREATE: 'Criar Requisições',
@@ -124,7 +118,7 @@ export const MENU_ITEMS = [
   // RESTAURANTE UNIFICADO
   { id: 'res_tables', label: 'Mesas & Comandas', icon: 'fa-chair', path: '/restaurant/tables', minPermission: 'RESTAURANT_MANAGE', allowedOps: [OperationType.RESTAURANT], category: 'RESTAURANT' },
   { id: 'res_menu', label: 'Cardápio & Fichas', icon: 'fa-book-open', path: '/restaurant/menu', minPermission: 'RESTAURANT_MANAGE', allowedOps: [OperationType.RESTAURANT], category: 'RESTAURANT' },
-  { id: 'admin_materials', label: 'Insumos (Catálogo)', icon: 'fa-tag', path: '/admin/materials', minPermission: 'MATERIAL_CATALOG_MANAGE', allowedOps: ALL_OPS, category: 'RESTAURANT' },
+  { id: 'res_insumos', label: 'Insumos (Catálogo)', icon: 'fa-tag', path: '/restaurant/insumos', minPermission: 'MATERIAL_CATALOG_MANAGE', allowedOps: ALL_OPS, category: 'RESTAURANT' },
 
   // LOJA / VENDAS PDV
   { id: 'sales', label: 'Vendas PDV', icon: 'fa-cash-register', path: '/sales', minPermission: 'SALE_VIEW', allowedOps: [OperationType.STORE, OperationType.RESTAURANT], category: 'STORE' },
